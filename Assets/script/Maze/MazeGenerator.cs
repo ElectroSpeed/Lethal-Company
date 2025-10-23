@@ -31,14 +31,13 @@ public class MazeGenerator : MazeChunk
         if (x == 0 && y == 0)
             return;
 
-        if (x != 0)
+        if (x - 1 >= 0)
         {
-            MazeCell neighborX = _chunkCells[x - 1 * _height + y];
+            MazeCell neighborX = _chunkCells[(x - 1 ) * _height + y];
             cell._neighbordsCells.Add(neighborX);
             neighborX._neighbordsCells.Add(cell);
         }
-        
-        if (y != 0)
+        if (y - 1 >= 0)
         {
             MazeCell neighborY = _chunkCells[x * _height + y - 1];
             cell._neighbordsCells.Add(neighborY);
