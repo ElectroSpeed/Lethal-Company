@@ -18,10 +18,15 @@ public class PlayerController : NetworkBehaviour
     private float _baseMoveSpeed;
     private float _currentSpeed;
 
+    [Header("Interaction Data")]
+    [SerializeField] private float _interactionRange;
+    [SerializeField] private LayerMask _interactibleMask;
+
     [Header("Component References")]
     [SerializeField] private Transform _cameraTransform;
     private Rigidbody _rb;
     private PlayerInput _playerInput;
+    private Player _player;
 
     [Header("Input State")]
     private Vector2 _moveInput;
@@ -43,11 +48,11 @@ public class PlayerController : NetworkBehaviour
         }
 
         _playerInput = GetComponent<PlayerInput>();
+        _player = GetComponent<Player>();
 
         _baseMoveSpeed = _moveSpeed;
         _currentSpeed = _moveSpeed;
 
-        // Désactiver les entrées et la caméra pour les joueurs distants
         if (!IsOwner)
         {
             if (_cameraTransform != null)
@@ -59,7 +64,6 @@ public class PlayerController : NetworkBehaviour
             return;
         }
 
-        // Initialisation pour le joueur local uniquement
         if (_cameraTransform != null)
         {
             _cameraTransform.gameObject.SetActive(true);
@@ -155,13 +159,29 @@ public class PlayerController : NetworkBehaviour
     public void OnInteract(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
-        // Exemple : _playerComponent.GetNearestInteractibleObject()?.Interact();
+
+        if (context.started)
+        {
+            if (Physics.SphereCast(transform.position, _interactionRange, Vector3.down,out RaycastHit hit, _interactibleMask))
+            {
+                if (hit.collider.gameObject.TryGetComponent(out IInteractible interactibleObject))
+                {
+                    interactibleObject.Interact(_player);
+                }
+            }
+        }
     }
 
     public void OnUseItem(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
-        // Exemple : _playerComponent.GetEquippedItem()?.Use();
+        if (context.started)
+        {
+            if (_player._equipiedItem is ConsumableItem consumableItem)
+            {
+                consumableItem.Use();
+            }
+        }
     }
     #endregion
 }
