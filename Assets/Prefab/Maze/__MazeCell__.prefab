@@ -187,6 +187,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d3e90f7903f7ce46a553bba89e79d0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _cellNumber: 0
+  _cellColor: {r: 0, g: 0, b: 0, a: 0}
+  _neighbordsCells: []
+  _visited: 0
 --- !u!1 &1400229643072329487
 GameObject:
   m_ObjectHideFlags: 0

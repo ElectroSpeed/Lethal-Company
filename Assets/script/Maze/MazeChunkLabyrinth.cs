@@ -9,6 +9,7 @@ public class MazeChunkLabyrinth : MazeChunk
 
     [Header("Maze Generation Settings")]
     [SerializeField] private float _mergeWeight = 0.5f;
+    [SerializeField] private float _percentWallDestroyed = 0.15f;
 
     [Header("Visualization (coroutine)")]
     [SerializeField] private float _stepDelay = 0.05f;
@@ -16,8 +17,7 @@ public class MazeChunkLabyrinth : MazeChunk
     public override void CallGenerateMaze()
     {
         GenerateGrid(_cellPrefab.gameObject, _width, _height, _size);
-        StopAllCoroutines();
-        StartCoroutine(GenerateMazeFusionCoroutine());
+        GenerateMazeFusionCoroutine();
     }
 
     private void GenerateGrid(GameObject cellPrefab, int width, int height, int cellSize)
@@ -28,11 +28,13 @@ public class MazeChunkLabyrinth : MazeChunk
         _chunkCells.Clear();
         _iteration = 0;
 
+        Vector3 worldPosition = new Vector3(transform.position.x, 0,  transform.position.z);
+        
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                Vector3 pos = new Vector3(x * cellSize, 0, y * cellSize);
+                Vector3 pos = new Vector3((x * cellSize) + worldPosition.x, 0, (y * cellSize) + worldPosition.z);
                 MazeCell newCell = Instantiate(cellPrefab, pos, Quaternion.identity, transform).GetComponent<MazeCell>();
                 newCell.Init(_iteration);
                 _chunkCells.Add(newCell);
@@ -58,7 +60,7 @@ public class MazeChunkLabyrinth : MazeChunk
         }
     }
     
-    private IEnumerator GenerateMazeFusionCoroutine()
+    private void GenerateMazeFusionCoroutine()
     {
         List<MazeCell> visited = new List<MazeCell>();
         Stack<MazeCell> stack = new Stack<MazeCell>();
@@ -96,18 +98,6 @@ public class MazeChunkLabyrinth : MazeChunk
                 next._visited = true;
                 visited.Add(next);
                 stack.Push(next);
-                
-                if (_stepDelay <= 0f)
-                    yield return null;
-                else
-                    yield return new WaitForSeconds(_stepDelay);
-            }
-            else
-            {
-                if (_stepDelay <= 0f)
-                    yield return null;
-                else
-                    yield return new WaitForSeconds(_stepDelay);
             }
         }
         
@@ -131,22 +121,22 @@ public class MazeChunkLabyrinth : MazeChunk
         int currentIndex = _chunkCells.IndexOf(current);
         int nextIndex = _chunkCells.IndexOf(next);
 
-        if (currentIndex + _height == nextIndex) // droite
+        if (currentIndex + _height == nextIndex)
         {
             current.DestroyWall(WallOrientation.Right);
             next.DestroyWall(WallOrientation.Left);
         }
-        else if (currentIndex - _height == nextIndex) // gauche
+        else if (currentIndex - _height == nextIndex)
         {
             current.DestroyWall(WallOrientation.Left);
             next.DestroyWall(WallOrientation.Right);
         }
-        else if (currentIndex + 1 == nextIndex) // haut (y+1)
+        else if (currentIndex + 1 == nextIndex)
         {
             current.DestroyWall(WallOrientation.Up);
             next.DestroyWall(WallOrientation.Down);
         }
-        else if (currentIndex - 1 == nextIndex) // bas (y-1)
+        else if (currentIndex - 1 == nextIndex)
         {
             current.DestroyWall(WallOrientation.Down);
             next.DestroyWall(WallOrientation.Up);
@@ -154,8 +144,70 @@ public class MazeChunkLabyrinth : MazeChunk
     }
 
     
-    protected virtual void OnGenerationCompleted()
+private void OnGenerationCompleted()
+{
+    DestroyRandomInternalWalls(_percentWallDestroyed);
+}
+
+private void DestroyRandomInternalWalls(float percentage)
+{
+    int totalCells = _chunkCells.Count;
+    int wallsToDestroy = Mathf.RoundToInt(totalCells * percentage);
+
+    int width = _width;
+    int height = _height;
+    int destroyed = 0;
+
+    while (destroyed < wallsToDestroy)
     {
-        Debug.Log("Maze generation (fusion) completed.");
+        MazeCell cell = _chunkCells[Random.Range(0, totalCells)];
+        
+        int index = _chunkCells.IndexOf(cell);
+        int x = index / height;
+        int y = index % height;
+        
+        if (x == 0 || y == 0 || x == width - 1 || y == height - 1)
+            continue;
+        
+        WallOrientation randomDir = (WallOrientation)Random.Range(0, 4);
+        MazeCell neighbor = null;
+
+        switch (randomDir)
+        {
+            case WallOrientation.Right:
+                neighbor = _chunkCells[(x + 1) * height + y];
+                break;
+            case WallOrientation.Left:
+                neighbor = _chunkCells[(x - 1) * height + y];
+                break;
+            case WallOrientation.Up:
+                neighbor = _chunkCells[x * height + (y + 1)];
+                break;
+            case WallOrientation.Down:
+                neighbor = _chunkCells[x * height + (y - 1)];
+                break;
+        }
+        
+        if (neighbor == null)
+            continue;
+        
+        cell.DestroyWall(randomDir);
+        neighbor.DestroyWall(GetOppositeWall(randomDir));
+
+        destroyed++;
     }
+}
+
+private WallOrientation GetOppositeWall(WallOrientation wall)
+{
+    switch (wall)
+    {
+        case WallOrientation.Right: return WallOrientation.Left;
+        case WallOrientation.Left: return WallOrientation.Right;
+        case WallOrientation.Up: return WallOrientation.Down;
+        case WallOrientation.Down: return WallOrientation.Up;
+        default: return wall;
+    }
+}
+
 }

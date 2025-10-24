@@ -5,15 +5,20 @@ public abstract class MazeChunk : MonoBehaviour
 {
     [Header("Chunk Settings")]
     [SerializeField] protected MazeCell _cellPrefab;
-    [SerializeField] protected int _width;
-    [SerializeField] protected int _height;
-    [SerializeField] protected int _size;
+    [SerializeField, Min(1)] protected int _width = 10;
+    [SerializeField, Min(1)] protected int _height = 10;
+    [SerializeField, Min(1)] protected int _size = 5;
 
-    [HideInInspector] public List<MazeCell> _chunkCells = new List<MazeCell>();
-    [HideInInspector] public List<MazeCell> _chunkExits = new List<MazeCell>();
+    [HideInInspector] public readonly List<MazeCell> _chunkCells = new();
+    [HideInInspector] public readonly List<MazeCell> _chunkExits = new();
 
     protected virtual void Start()
     {
+        if (_cellPrefab == null)
+        {
+            return;
+        }
+
         CallGenerateMaze();
     }
 

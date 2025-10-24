@@ -1,54 +1,43 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 public class MazeCell : MonoBehaviour
 {
     public int _cellNumber;
     public Color _cellColor;
+    [HideInInspector] public bool _visited;
 
-    [HideInInspector] public List<MazeCell> _neighbordsCells = new List<MazeCell>();
-    [HideInInspector] public bool _visited = false;
-
-    public void ChangeColor()
-    {
-        transform.GetChild(0).GetChild(0).GetComponent<Renderer>().material.color = _cellColor;
-    }
+    [HideInInspector] public readonly List<MazeCell> _neighbordsCells = new();
 
     public void Init(int id)
     {
         _cellNumber = id;
-        _cellColor = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
+        _cellColor = Random.ColorHSV(0f, 1f, 0.6f, 1f, 0.6f, 1f);
         ChangeColor();
+    }
+
+    public void ChangeColor()
+    {
+        var rend = transform.GetChild(0).GetChild(0).GetComponent<Renderer>();
+        rend.material.color = _cellColor;
     }
 
     public void DestroyWall(WallOrientation orientation)
     {
-        GameObject wallParent = this.transform.GetChild(2).gameObject;
-        switch (orientation)
+        Transform walls = transform.GetChild(2);
+        int wallIndex = orientation switch
         {
-            case WallOrientation.Left:
-                wallParent.transform.GetChild(0).gameObject.SetActive(false); 
-                break;
-            case WallOrientation.Right:
-                wallParent.transform.GetChild(1).gameObject.SetActive(false); 
-                break;
-            case WallOrientation.Up:
-                wallParent.transform.GetChild(2).gameObject.SetActive(false); 
-                break;
-            case WallOrientation.Down:
-                wallParent.transform.GetChild(3).gameObject.SetActive(false); 
-                break;
-            _ : break;
-        }
+            WallOrientation.Left => 0,
+            WallOrientation.Right => 1,
+            WallOrientation.Up => 2,
+            WallOrientation.Down => 3,
+            _ => -1
+        };
+
+        if (wallIndex >= 0 && wallIndex < walls.childCount)
+            walls.GetChild(wallIndex).gameObject.SetActive(false);
     }
 }
-[System.Serializable]
-public enum WallOrientation
-{
-    Right,
-    Left,
-    Up,
-    Down
-}
+
+public enum WallOrientation { Right, Left, Up, Down }
