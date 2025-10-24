@@ -898,7 +898,13 @@ PlayerSettings:
   XboxOneOverrideIdentityName: 
   XboxOneOverrideIdentityPublisher: 
   vrEditorSettings: {}
-  cloudServicesEnabled: {}
+  cloudServicesEnabled:
+    Build: 0
+    Game Performance: 0
+    Legacy Analytics: 0
+    Purchasing: 0
+    UDP: 0
+    Unity Ads: 0
   luminIcon:
     m_Name: 
     m_ModelFolderPath: 
@@ -920,11 +926,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: 96172515-c71e-4783-9b07-d83abd011e11
+  cloudProjectId: d1ee75da-6650-4ebb-b72e-bbd9dd711ff3
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: Lethal Company 2025-10-22_15-22-41
-  organizationId: unity_ff3709cd199955200c91
+  projectName: Lethal Company
+  organizationId: matcodeew
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
