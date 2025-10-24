@@ -2,28 +2,27 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(ClientNetworkTransform))]
+[RequireComponent(typeof(PlayerInput))]
 public class PlayerController : NetworkBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float _moveSpeed = 5f; //Get Move Speed of PlayerStats
-    [SerializeField] private float _jumpForce = 5f; //same 
+    [SerializeField] private float _moveSpeed = 5f;
+    [SerializeField] private float _jumpForce = 5f;
     [SerializeField] private float _lookSensitivity = 1.5f;
 
-    [Header("Sprint Settings")] //Mettre tout ça dans le playerStats
+    [Header("Sprint Settings")]
     [SerializeField] private float _sprintSpeedMultiplier = 1.8f;
     [SerializeField] private float _sprintTransitionSpeed = 10f;
     private bool _isSprinting = false;
     private float _baseMoveSpeed;
     private float _currentSpeed;
 
-
-
     [Header("Component References")]
     [SerializeField] private Transform _cameraTransform;
     private Rigidbody _rb;
-    private Player _playerComponent;
+    private PlayerInput _playerInput;
 
     [Header("Input State")]
     private Vector2 _moveInput;
@@ -37,61 +36,76 @@ public class PlayerController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        if (IsOwner)
+
+        if (TryGetComponent(out Rigidbody rb))
         {
-            if (TryGetComponent(out Rigidbody rb))
-            {
-                _rb = rb;
-                _rb.freezeRotation = true;
-            }
-
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-
-
-            _baseMoveSpeed = _moveSpeed;
-            _currentSpeed = _moveSpeed;
+            _rb = rb;
+            _rb.freezeRotation = true;
         }
+
+        _playerInput = GetComponent<PlayerInput>();
+
+        _baseMoveSpeed = _moveSpeed;
+        _currentSpeed = _moveSpeed;
+
+        // Désactiver les entrées et la caméra pour les joueurs distants
         if (!IsOwner)
         {
-            _cameraTransform.gameObject.SetActive(false);
-            GetComponent<PlayerInput>().enabled = false;
+            if (_cameraTransform != null)
+                _cameraTransform.gameObject.SetActive(false);
+
+            if (_playerInput != null)
+                _playerInput.enabled = false;
+
+            return;
         }
+
+        // Initialisation pour le joueur local uniquement
+        if (_cameraTransform != null)
+        {
+            _cameraTransform.gameObject.SetActive(true);
+            _cameraTransform.tag = "MainCamera";
+        }
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        Debug.Log($"Spawned player {OwnerClientId}, IsOwner={IsOwner}");
     }
 
     private void FixedUpdate()
     {
+        if (!IsOwner || !Application.isFocused) return;
+
+        CheckGrounded();
         MovePlayer();
     }
 
     private void LateUpdate()
     {
+        if (!IsOwner || !Application.isFocused) return;
+
         RotatePlayerAndCamera();
     }
 
     private void MovePlayer()
     {
-        // Détermine la vitesse actuelle (transition douce)
         float targetSpeed = _isSprinting && _isGrounded
             ? _baseMoveSpeed * _sprintSpeedMultiplier
             : _baseMoveSpeed;
 
         _currentSpeed = Mathf.Lerp(_currentSpeed, targetSpeed, Time.fixedDeltaTime * _sprintTransitionSpeed);
 
-        // Direction du mouvement
         Vector3 moveDir = transform.forward * _moveInput.y + transform.right * _moveInput.x;
         Vector3 targetVelocity = new Vector3(moveDir.x * _currentSpeed, _rb.linearVelocity.y, moveDir.z * _currentSpeed);
         _rb.linearVelocity = targetVelocity;
 
-        // Saut
         if (_jumpPressed && _isGrounded)
         {
             _rb.AddForce(Vector3.up * _jumpForce, ForceMode.Impulse);
             _jumpPressed = false;
         }
     }
-
-
 
     private void RotatePlayerAndCamera()
     {
@@ -103,48 +117,52 @@ public class PlayerController : NetworkBehaviour
         _cameraTransform.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
     }
 
-    #region Input Callbacks
+    private void CheckGrounded()
+    {
+        _isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
+    }
 
+    #region Input Callbacks
     public void OnMove(InputAction.CallbackContext context)
     {
+        if (!IsOwner) return;
         _moveInput = context.ReadValue<Vector2>();
     }
 
     public void OnLook(InputAction.CallbackContext context)
     {
+        if (!IsOwner) return;
         _lookInput = context.ReadValue<Vector2>();
     }
 
     public void OnJump(InputAction.CallbackContext context)
     {
+        if (!IsOwner) return;
         if (context.performed)
             _jumpPressed = true;
     }
+
     public void OnSprint(InputAction.CallbackContext context)
     {
+        if (!IsOwner) return;
+
         if (context.started)
             _isSprinting = true;
 
         if (context.canceled)
             _isSprinting = false;
     }
+
     public void OnInteract(InputAction.CallbackContext context)
     {
-        //_playerComponent.GetNeareastInteractibleObject().interact();
+        if (!IsOwner) return;
+        // Exemple : _playerComponent.GetNearestInteractibleObject()?.Interact();
     }
+
     public void OnUseItem(InputAction.CallbackContext context)
     {
-        //_playerComponent.GetEquipiedItem().Use();
+        if (!IsOwner) return;
+        // Exemple : _playerComponent.GetEquippedItem()?.Use();
     }
     #endregion
-
-    private void OnCollisionStay(Collision collision)
-    {
-        _isGrounded = true;
-    }
-
-    private void OnCollisionExit(Collision collision)
-    {
-        _isGrounded = false;
-    }
 }

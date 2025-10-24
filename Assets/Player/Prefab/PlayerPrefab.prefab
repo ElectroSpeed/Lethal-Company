@@ -396,7 +396,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e3e5b0e222a9cc4b83cbe479c0420b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
   _moveSpeed: 5
   _jumpForce: 5
   _lookSensitivity: 0.35
