@@ -6,21 +6,20 @@ public class MazeCell : MonoBehaviour
 {
     public int _cellNumber;
     public Color _cellColor;
-    [HideInInspector] public bool _visited;
 
     [HideInInspector] public readonly List<MazeCell> _neighbordsCells = new();
+    [HideInInspector] public bool _visited = false;
 
     public void Init(int id)
     {
         _cellNumber = id;
-        _cellColor = Random.ColorHSV(0f, 1f, 0.6f, 1f, 0.6f, 1f);
+        _cellColor = new Color(Random.value, Random.value, Random.value);
         ChangeColor();
     }
 
     public void ChangeColor()
     {
-        var rend = transform.GetChild(0).GetChild(0).GetComponent<Renderer>();
-        rend.material.color = _cellColor;
+        transform.GetChild(0).GetChild(0).GetComponent<Renderer>().material.color = _cellColor;
     }
 
     public void DestroyWall(WallOrientation orientation)
@@ -34,7 +33,6 @@ public class MazeCell : MonoBehaviour
             WallOrientation.Down => 3,
             _ => -1
         };
-
         if (wallIndex >= 0 && wallIndex < walls.childCount)
             walls.GetChild(wallIndex).gameObject.SetActive(false);
     }

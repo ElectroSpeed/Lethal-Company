@@ -18,8 +18,14 @@ public class MapManager : MonoBehaviour
         if (_width % 2 == 0) _width++;
         if (_height % 2 == 0) _height++;
         
+        if (_chunkLabyrinthPrefab != null)
+        {
+            _chunkSize = new Vector2Int(
+                _chunkLabyrinthPrefab._width * _chunkLabyrinthPrefab._size,
+                _chunkLabyrinthPrefab._height * _chunkLabyrinthPrefab._size
+            );
+        }
     }
-
 
     private void Start()
     {
