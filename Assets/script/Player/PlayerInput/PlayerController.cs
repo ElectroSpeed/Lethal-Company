@@ -21,6 +21,7 @@ public class PlayerController : NetworkBehaviour
     [Header("Interaction Data")]
     [SerializeField] private float _interactionRange;
     [SerializeField] private LayerMask _interactibleMask;
+    private IInteractible _currentInteractible;
 
     [Header("Component References")]
     [SerializeField] private Transform _cameraTransform;
@@ -156,22 +157,31 @@ public class PlayerController : NetworkBehaviour
             _isSprinting = false;
     }
 
+
     public void OnInteract(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
+        if (!context.started) return;
+        if (_currentInteractible == null) return;
 
-        if (context.started)
+        NetworkObject netObj = ((MonoBehaviour)_currentInteractible).GetComponent<NetworkObject>();
+        if (netObj != null)
         {
-            if (Physics.SphereCast(transform.position, _interactionRange, Vector3.down,out RaycastHit hit, _interactibleMask))
-            {
-                if (hit.collider.gameObject.TryGetComponent(out IInteractible interactibleObject))
-                {
-                    interactibleObject.Interact(_player);
-                }
-            }
+            InteractServerRpc(netObj);
         }
     }
 
+    [ServerRpc]
+    private void InteractServerRpc(NetworkObjectReference interactibleRef)
+    {
+        if (interactibleRef.TryGet(out NetworkObject netObj))
+        {
+            if (netObj.TryGetComponent(out IInteractible interactible))
+            {
+                interactible.Interact(_player);
+            }
+        }
+    }
     public void OnUseItem(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
@@ -183,5 +193,29 @@ public class PlayerController : NetworkBehaviour
             }
         }
     }
+    #endregion
+
+
+    #region Trigger Detection
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!IsOwner) return;
+        if (other.TryGetComponent(out IInteractible interactible))
+        {
+            _currentInteractible = interactible;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (!IsOwner) return;
+        if (other.TryGetComponent(out IInteractible interactible))
+        {
+            if (_currentInteractible == interactible)
+                _currentInteractible = null;
+        }
+    }
+
     #endregion
 }
