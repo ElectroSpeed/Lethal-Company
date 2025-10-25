@@ -1,46 +1,72 @@
+using TMPro;
 using UnityEngine;
-using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
-using UnityEngine.SceneManagement;
 
 public class MainMenusManager : MonoBehaviour
 {
-    [SerializeField] private NetworkManager _networkManager;
-    [SerializeField] private string _gameSceneName = "GameScene";
+    [Header("General UI Ref")]
+    [SerializeField] private GameObject _buttonPanel;
+    [SerializeField] private GameObject _gameTitle;
+    [SerializeField] private GameObject _MainMenusBackground;
 
+    [Header("Join Room Ref")]
+    [SerializeField] private GameObject _joinRoomPanel;
+    [SerializeField] private TMP_InputField _chooseSpeudoJoin;
+    [SerializeField] private TMP_InputField _joinCode;
 
-    [Header("DEBUG")]
-    [SerializeField] private string _MultiplayerScene = "Multiplayer";
+    [Header("Host Room Ref")]
+    [SerializeField] private GameObject _hostRoomPanel;
+    [SerializeField] private TMP_InputField _chooseSpeudoHost;
 
-    private void Awake()
+    [Header("Settings Ref")]
+    [SerializeField] private GameObject _settingsPanel;
+
+    #region JoinPanel
+    public void JoinRoom()
     {
-        if (_networkManager == null)
-            _networkManager = NetworkManager.Singleton;
+        _joinRoomPanel.SetActive(true);
+        _buttonPanel.SetActive(false);
     }
-
-    public void HostGame()
+    public void QuiJoinPanel()
     {
-        _networkManager.StartHost();
-
-        if (_networkManager.IsServer)
-        {
-            _networkManager.SceneManager.LoadScene(_MultiplayerScene, LoadSceneMode.Single);
-        }
+        _joinRoomPanel.SetActive(false);
+        _buttonPanel.SetActive(true);
+        _chooseSpeudoJoin.text = string.Empty;
+        _joinCode.text = string.Empty;
     }
+    #endregion
 
-    public void JoinGame()
+    #region HostPanel
+    public void HostRoom()
     {
-        _networkManager.StartClient();
-        if (_networkManager.IsServer)
-        {
-            _networkManager.SceneManager.LoadScene(_MultiplayerScene, LoadSceneMode.Single);
-        }
+        _hostRoomPanel.SetActive(true);
+        _buttonPanel.SetActive(false);
     }
-
-    public void JoinGameWithIP(string ipAddress)
+    public void QuitHostPanel()
     {
-        var transport = (UnityTransport)_networkManager.NetworkConfig.NetworkTransport;
-        transport.SetConnectionData(ipAddress, 7777);
-        _networkManager.StartClient();
+        _hostRoomPanel.SetActive(false);
+        _buttonPanel.SetActive(true);
+        _chooseSpeudoHost.text = string.Empty;
     }
+    #endregion
+
+    #region Setting
+    public void Setting()
+    {
+        _buttonPanel.SetActive(false);
+        _settingsPanel.SetActive(true);
+    }
+    public void QuitSetting()
+    {
+        _buttonPanel.SetActive(true);
+        _settingsPanel.SetActive(false);
+    }
+    #endregion
+
+    #region Quit
+    public void Quit()
+    {
+        Application.Quit();
+    }
+    #endregion
 }
+

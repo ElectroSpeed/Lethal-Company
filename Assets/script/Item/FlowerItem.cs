@@ -16,8 +16,7 @@ public class FlowerItem : Item
     {
         if (NetworkObject != null && NetworkObject.IsSpawned)
         {
-            // Tous les clients verront l’objet disparaître
-            NetworkObject.Despawn(true);
+            NetworkObject.Despawn(true); //Despawn object for all client
         }
     }
 
