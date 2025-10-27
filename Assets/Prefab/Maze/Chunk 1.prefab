@@ -45,11 +45,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _cellPrefab: {fileID: 6095167762416087811, guid: ff42ad5f4099510428db105583dd4c76, type: 3}
-  _width: 10
-  _height: 10
+  _width: 25
+  _height: 25
   _size: 5
-  _chunkCells: []
-  _chunkExits: []
   _mergeWeight: 0.5
   _percentWallDestroyed: 0.15
-  _stepDelay: 0
+  _neighbordsChunks: []
+  _isGenerated: 0

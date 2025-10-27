@@ -22,7 +22,7 @@ public class MazeCell : MonoBehaviour
         transform.GetChild(0).GetChild(0).GetComponent<Renderer>().material.color = _cellColor;
     }
 
-    public void DestroyWall(WallOrientation orientation)
+    public void DestroyWall(WallOrientation orientation, bool isBorder, MazeChunkLabyrinth chunk)
     {
         Transform walls = transform.GetChild(2);
         int wallIndex = orientation switch
@@ -34,7 +34,14 @@ public class MazeCell : MonoBehaviour
             _ => -1
         };
         if (wallIndex >= 0 && wallIndex < walls.childCount)
-            walls.GetChild(wallIndex).gameObject.SetActive(false);
+        {
+            GameObject destroyedWall = walls.GetChild(wallIndex).gameObject;
+            destroyedWall.SetActive(false);
+            if (!isBorder)
+            {
+                chunk._wallDestroyed.Add(destroyedWall);
+            }
+        }
     }
 }
 
