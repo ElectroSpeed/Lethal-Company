@@ -1,14 +1,19 @@
-using Unity.Netcode;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Netcode;
+using UnityEditor.PackageManager;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class LobbyManager : NetworkBehaviour
 {
     public static LobbyManager Instance;
+
+    [Header("UI")]
     [SerializeField] private GameObject _startGameButton;
     [SerializeField] private TextMeshProUGUI _hostjoinCode;
+
+    [Header("Players")]
     [SerializeField] public List<PlayerLobby> _playerPrefabs = new();
 
     private void Awake()
@@ -18,17 +23,24 @@ public class LobbyManager : NetworkBehaviour
 
         _hostjoinCode.text = PlayerPrefs.GetString("JoinCode", "ERROR");
         _hostjoinCode.color = Color.red;
+
+
+        if (/*clients.Count == 1 && */NetworkManager.Singleton.IsHost)
+        {
+            _startGameButton.SetActive(true);
+            return;
+        }
     }
-
-
 
     public void CheckAllPlayersReady()
     {
         if (!IsServer) return;
 
+        var clients = NetworkManager.Singleton.ConnectedClientsList;
+
         bool allReady = true;
 
-        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        foreach (var client in clients)
         {
             PlayerLobby playerLobby = client.PlayerObject.GetComponent<PlayerLobby>();
             if (playerLobby == null || !playerLobby.IsReady())
@@ -50,12 +62,14 @@ public class LobbyManager : NetworkBehaviour
 
         foreach (var lobbyPlayer in _playerPrefabs)
         {
-            if (lobbyPlayer.NetworkObject != null && lobbyPlayer.NetworkObject.IsSpawned)
+            if (lobbyPlayer != null && lobbyPlayer.NetworkObject != null && lobbyPlayer.NetworkObject.IsSpawned)
+            {
                 lobbyPlayer.NetworkObject.Despawn(true);
+            }
         }
 
         NetworkManager.Singleton.SceneManager.LoadScene(
-            "Multiplayer",
+            "GameScene",
             LoadSceneMode.Single
         );
     }

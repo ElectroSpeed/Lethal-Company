@@ -11,6 +11,7 @@ public abstract class MazeChunk : MonoBehaviour
 
     [HideInInspector] public readonly List<MazeCell> _chunkCells = new();
     [HideInInspector] public readonly List<MazeCell> _chunkExits = new();
+    [HideInInspector] public List<MazeChunkLabyrinth> _neighbordsChunks = new();
 
     protected virtual void Start()
     {

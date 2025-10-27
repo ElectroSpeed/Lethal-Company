@@ -10,7 +10,6 @@ public class MazeChunkLabyrinth : MazeChunk
     [SerializeField, Range(0f, 1f)] private float _percentWallDestroyed = 0.15f;
     [SerializeField] private float _fusionWaitingSecond;
 
-    public List<MazeChunkLabyrinth> _neighbordsChunks = new();
     public List<GameObject> _wallDestroyed = new();
 
     public bool _isGenerated;
@@ -68,7 +67,6 @@ public class MazeChunkLabyrinth : MazeChunk
 
         MazeCell start = _chunkCells[Random.Range(0, _chunkCells.Count)];
         start._visited = true;
-        start.ChangeColor();
         visited.Add(start);
         stack.Push(start);
 
@@ -90,8 +88,6 @@ public class MazeChunkLabyrinth : MazeChunk
                 MazeCell next = GetWeightedNeighbor(neighbors);
 
                 next._cellNumber = current._cellNumber;
-                next._cellColor = current._cellColor;
-                next.ChangeColor();
 
                 DestroyWallWithOrientation(current, next);
 

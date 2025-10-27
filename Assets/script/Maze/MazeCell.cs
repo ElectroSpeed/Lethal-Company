@@ -16,14 +16,8 @@ public class MazeCell : MonoBehaviour
     public void Init(int id)
     {
         _cellNumber = id;
-        _cellColor = new Color(Random.value, Random.value, Random.value);
-        ChangeColor();
     }
 
-    public void ChangeColor()
-    {
-        transform.GetChild(0).GetChild(0).GetComponent<Renderer>().material.color = _cellColor;
-    }
 
     public void DestroyWall(WallOrientation orientation, bool isBorder, MazeChunkLabyrinth chunk)
     {

@@ -17,6 +17,8 @@ public class MapManager : MonoBehaviour
 
     private readonly List<MazeChunk> _mapChunks = new();
 
+    public MazeChunk _safeChunk;
+
     private void OnValidate()
     {
         if (_width % 2 == 0) _width++;
@@ -38,11 +40,11 @@ public class MapManager : MonoBehaviour
 
     private void GenerateChunkGrid()
     {
-        if (!_chunkLabyrinthPrefab || !_chunkSafePrefab)
-        {
-            //  yield return null;
-            return;
-        }
+        //if (!_chunkLabyrinthPrefab || !_chunkSafePrefab)
+        //{
+        //    //  yield return null;
+        //    return;
+        //}
 
         _mapChunks.Clear();
 
@@ -61,17 +63,21 @@ public class MapManager : MonoBehaviour
 
                 MazeChunk prefab = isCenter ? _chunkSafePrefab : _chunkLabyrinthPrefab;
                 MazeChunk newChunk = Instantiate(prefab, pos, Quaternion.identity, transform);
+                if(isCenter) _safeChunk = newChunk;
                 _mapChunks.Add(newChunk);
 
                 MazeChunkLabyrinth currentChunk = newChunk.GetComponent<MazeChunkLabyrinth>();
-
                 if (currentChunk == null)
+                {
                     continue;
+                }
                 //yield return new WaitForSeconds(0.25f);
 
                 if (x > 0)
                 {
                     MazeChunkLabyrinth leftChunk = _mapChunks[y * _width + (x - 1)].GetComponent<MazeChunkLabyrinth>();
+                    if (leftChunk is null) continue;
+
                     currentChunk._neighbordsChunks.Add(leftChunk);
                     leftChunk._neighbordsChunks.Add(currentChunk);
                     StartCoroutine(ConnectAdjacentChunks(currentChunk, leftChunk, WallOrientation.Left));
@@ -80,6 +86,9 @@ public class MapManager : MonoBehaviour
                 if (y > 0)
                 {
                     MazeChunkLabyrinth downChunk = _mapChunks[(y - 1) * _width + x].GetComponent<MazeChunkLabyrinth>();
+                    if (downChunk is null) continue;
+
+
                     currentChunk._neighbordsChunks.Add(downChunk);
                     downChunk._neighbordsChunks.Add(currentChunk);
                     StartCoroutine(ConnectAdjacentChunks(currentChunk, downChunk, WallOrientation.Down));
@@ -87,7 +96,6 @@ public class MapManager : MonoBehaviour
             }
         }
     }
-
     private IEnumerator ConnectAdjacentChunks(MazeChunkLabyrinth labA, MazeChunkLabyrinth labB, WallOrientation direction)
     {
         yield return new WaitUntil(() => labA._isGenerated && labB._isGenerated);
