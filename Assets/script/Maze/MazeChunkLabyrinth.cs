@@ -7,9 +7,11 @@ public class MazeChunkLabyrinth : MazeChunk
     [Header("Maze Generation Settings")]
     [SerializeField, Range(0f, 1f)] private float _mergeWeight = 0.5f;
     [SerializeField, Range(0f, 1f)] private float _percentWallDestroyed = 0.15f;
+    
+    public List<MazeChunkLabyrinth> _neighbordsChunks = new();
+    public List<GameObject> _wallDestroyed = new();
 
-    [Header("Visualization")]
-    [SerializeField] private float _stepDelay = 0.05f;
+    public bool _isGenerated;
 
     private int _iteration;
 
@@ -26,27 +28,26 @@ public class MazeChunkLabyrinth : MazeChunk
 
         _chunkCells.Clear();
         _iteration = 0;
-
         Vector3 worldOffset = transform.position;
 
-        for (int x = 0; x < width; x++)
+        for (int y = 0; y < height; y++)
         {
-            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
             {
                 Vector3 pos = new Vector3(x * cellSize, 0, y * cellSize) + worldOffset;
                 MazeCell newCell = Instantiate(cellPrefab, pos, Quaternion.identity, transform).GetComponent<MazeCell>();
                 newCell.Init(_iteration);
                 _chunkCells.Add(newCell);
-                
+        
                 if (x > 0)
                 {
-                    MazeCell left = _chunkCells[(x - 1) * height + y];
+                    MazeCell left = _chunkCells[y * width + (x - 1)];
                     newCell._neighbordsCells.Add(left);
                     left._neighbordsCells.Add(newCell);
                 }
                 if (y > 0)
                 {
-                    MazeCell down = _chunkCells[x * height + (y - 1)];
+                    MazeCell down = _chunkCells[(y - 1) * width + x];
                     newCell._neighbordsCells.Add(down);
                     down._neighbordsCells.Add(newCell);
                 }
@@ -54,9 +55,11 @@ public class MazeChunkLabyrinth : MazeChunk
                 _iteration++;
             }
         }
+
+        _isGenerated = true;
     }
 
-    private void GenerateMazeFusion()
+    public void GenerateMazeFusion()
     {
         List<MazeCell> visited = new();
         Stack<MazeCell> stack = new();
@@ -114,15 +117,15 @@ public class MazeChunkLabyrinth : MazeChunk
         int currentIndex = _chunkCells.IndexOf(current);
         int nextIndex = _chunkCells.IndexOf(next);
 
-        int cx = currentIndex / _height;
-        int cy = currentIndex % _height;
-        int nx = nextIndex / _height;
-        int ny = nextIndex % _height;
+        int cx = currentIndex % _width;
+        int cy = currentIndex / _width;
+        int nx = nextIndex % _width;
+        int ny = nextIndex / _width;
 
-        if (nx == cx + 1) { current.DestroyWall(WallOrientation.Right); next.DestroyWall(WallOrientation.Left); }
-        else if (nx == cx - 1) { current.DestroyWall(WallOrientation.Left); next.DestroyWall(WallOrientation.Right); }
-        else if (ny == cy + 1) { current.DestroyWall(WallOrientation.Up); next.DestroyWall(WallOrientation.Down); }
-        else if (ny == cy - 1) { current.DestroyWall(WallOrientation.Down); next.DestroyWall(WallOrientation.Up); }
+        if (nx == cx + 1) { current.DestroyWall(WallOrientation.Right, false, this); next.DestroyWall(WallOrientation.Left, false, this); }
+        else if (nx == cx - 1) { current.DestroyWall(WallOrientation.Left, false, this); next.DestroyWall(WallOrientation.Right, false, this); }
+        else if (ny == cy + 1) { current.DestroyWall(WallOrientation.Up, false, this); next.DestroyWall(WallOrientation.Down, false, this); }
+        else if (ny == cy - 1) { current.DestroyWall(WallOrientation.Down, false, this); next.DestroyWall(WallOrientation.Up, false, this); }
     }
 
     private void OnGenerationCompleted()
@@ -141,8 +144,8 @@ public class MazeChunkLabyrinth : MazeChunk
             MazeCell cell = _chunkCells[Random.Range(0, totalCells)];
 
             int index = _chunkCells.IndexOf(cell);
-            int x = index / _height;
-            int y = index % _height;
+            int x = index % _width;
+            int y = index / _width;
 
             if (x == 0 || y == 0 || x == _width - 1 || y == _height - 1)
                 continue;
@@ -153,8 +156,8 @@ public class MazeChunkLabyrinth : MazeChunk
             if (neighbor == null)
                 continue;
 
-            cell.DestroyWall(dir);
-            neighbor.DestroyWall(GetOppositeWall(dir));
+            cell.DestroyWall(dir, false, this);
+            neighbor.DestroyWall(GetOppositeWall(dir), false, this);
 
             destroyed++;
         }
@@ -164,10 +167,10 @@ public class MazeChunkLabyrinth : MazeChunk
     {
         return dir switch
         {
-            WallOrientation.Right => (x + 1 < _width) ? _chunkCells[(x + 1) * _height + y] : null,
-            WallOrientation.Left => (x - 1 >= 0) ? _chunkCells[(x - 1) * _height + y] : null,
-            WallOrientation.Up => (y + 1 < _height) ? _chunkCells[x * _height + (y + 1)] : null,
-            WallOrientation.Down => (y - 1 >= 0) ? _chunkCells[x * _height + (y - 1)] : null,
+            WallOrientation.Right => (x + 1 < _width) ? _chunkCells[y * _width + (x + 1)] : null,
+            WallOrientation.Left => (x - 1 >= 0) ? _chunkCells[y * _width + (x - 1)] : null,
+            WallOrientation.Up => (y + 1 < _height) ? _chunkCells[(y + 1) * _width + x] : null,
+            WallOrientation.Down => (y - 1 >= 0) ? _chunkCells[(y - 1) * _width + x] : null,
             _ => null
         };
     }
