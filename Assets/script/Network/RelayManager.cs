@@ -31,6 +31,7 @@ public class RelayManager : MonoBehaviour
     public async void StartRelay()
     {
         string joinCode = await StartHostWithRelay(4);
+        PlayerPrefs.SetString("JoinCode", joinCode);
         _joinCodeText.text = joinCode;
 
     }

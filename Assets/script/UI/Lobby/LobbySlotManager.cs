@@ -43,6 +43,7 @@ public class LobbySlotManager : NetworkBehaviour
         }
 
         GameObject playerLobby = Instantiate(_playerLobbyPrefab, _slots[slotIndex].position + new Vector3(0, 1.5f, 0), _slots[slotIndex].rotation);
+        LobbyManager.Instance._playerPrefabs.Add(playerLobby.GetComponent<PlayerLobby>());
 
         var netObj = playerLobby.GetComponent<NetworkObject>();
         netObj.SpawnAsPlayerObject(clientId);

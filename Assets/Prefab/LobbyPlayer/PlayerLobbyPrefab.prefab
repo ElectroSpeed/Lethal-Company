@@ -675,6 +675,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _nameText: {fileID: 8659774725051160944}
   _readyText: {fileID: 6487120977017387242}
+  _isReadyButton: {fileID: 7685199045533615478}
 --- !u!1 &6169183980724380089
 GameObject:
   m_ObjectHideFlags: 0
@@ -725,7 +726,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &171115178837068736
 RectTransform:
   m_ObjectHideFlags: 0

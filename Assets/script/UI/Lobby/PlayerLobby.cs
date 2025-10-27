@@ -5,46 +5,50 @@ using UnityEngine;
 
 public class PlayerLobby : NetworkBehaviour
 {
-    [SerializeField] private TextMeshProUGUI _nameText;      // Pseudo
-    [SerializeField] private TextMeshProUGUI _readyText;     // Texte Ready
+    [SerializeField] private TextMeshProUGUI _nameText;
+    [SerializeField] private TextMeshProUGUI _readyText;
+    [SerializeField] private GameObject _isReadyButton;
 
     private NetworkVariable<FixedString32Bytes> _playerName = new(writePerm: NetworkVariableWritePermission.Server);
     private NetworkVariable<bool> _isReady = new(writePerm: NetworkVariableWritePermission.Server);
 
     public override void OnNetworkSpawn()
     {
-        // Pseudo synchronisé pour tous
-        _playerName.OnValueChanged += (_, newValue) => _nameText.text = newValue.ToString();
-
-        // Ready synchronisé pour tous
-        _isReady.OnValueChanged += (_, newValue) =>
+        if (IsOwner)
         {
-            if (_readyText == null) return;
-
-            if (newValue)
-            {
-                _readyText.text = "Ready";
-                _readyText.color = Color.green;
-            }
-            else
-            {
-                _readyText.text = "Not Ready";
-                _readyText.color = Color.red;
-            }
-        };
-
-        // Initialisation par défaut
-        if (IsServer)
+            _isReadyButton.SetActive(!IsServer);
+            _isReady.Value = true;
+        }
+        else
         {
-            _isReady.Value = false;
+            _isReadyButton.SetActive(false);
         }
 
-        // Owner définit son pseudo une seule fois
-        if (IsOwner && IsClient)
+        _playerName.OnValueChanged += OnNameChanged;
+        _isReady.OnValueChanged += OnReadyChanged;
+
+        OnNameChanged(default, _playerName.Value);
+        OnReadyChanged(default, _isReady.Value);
+
+        if (IsOwner)
         {
             string playerName = PlayerPrefs.GetString("PlayerName", $"Player_{OwnerClientId}");
             SubmitNameServerRpc(playerName);
         }
+    }
+
+    private void OnNameChanged(FixedString32Bytes oldValue, FixedString32Bytes newValue)
+    {
+        if (_nameText != null)
+            _nameText.text = newValue.ToString();
+    }
+
+    private void OnReadyChanged(bool oldValue, bool newValue)
+    {
+        if (_readyText == null) return;
+
+        _readyText.text = newValue ? "Ready" : "Not Ready";
+        _readyText.color = newValue ? Color.green : Color.red;
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -53,13 +57,10 @@ public class PlayerLobby : NetworkBehaviour
         _playerName.Value = playerName;
     }
 
-    // Appelé par le bouton Ready
     public void ToggleReady()
     {
         if (IsOwner)
-        {
             ToggleReadyServerRpc();
-        }
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -69,6 +70,9 @@ public class PlayerLobby : NetworkBehaviour
         LobbyManager.Instance.CheckAllPlayersReady();
     }
 
-    // Pour que le LobbyManager puisse vérifier l'état
-    public bool IsReady() => _isReady.Value;
+    public bool IsReady()
+    {
+        if(IsOwner) {return true;}
+        return _isReady.Value;
+    }
 }
