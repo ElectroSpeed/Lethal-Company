@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -5,9 +7,9 @@ using Random = UnityEngine.Random;
 public class MazeChunkLabyrinth : MazeChunk
 {
     [Header("Maze Generation Settings")]
-    [SerializeField, Range(0f, 1f)] private float _mergeWeight = 0.5f;
     [SerializeField, Range(0f, 1f)] private float _percentWallDestroyed = 0.15f;
-    
+    [SerializeField] private float _fusionWaitingSecond;
+
     public List<MazeChunkLabyrinth> _neighbordsChunks = new();
     public List<GameObject> _wallDestroyed = new();
 
@@ -24,7 +26,7 @@ public class MazeChunkLabyrinth : MazeChunk
     private void GenerateGrid(GameObject cellPrefab, int width, int height, int cellSize)
     {
         if (cellPrefab == null || width <= 0 || height <= 0 || cellSize <= 0)
-            return;
+             return ;
 
         _chunkCells.Clear();
         _iteration = 0;
@@ -38,7 +40,7 @@ public class MazeChunkLabyrinth : MazeChunk
                 MazeCell newCell = Instantiate(cellPrefab, pos, Quaternion.identity, transform).GetComponent<MazeCell>();
                 newCell.Init(_iteration);
                 _chunkCells.Add(newCell);
-        
+
                 if (x > 0)
                 {
                     MazeCell left = _chunkCells[y * width + (x - 1)];
@@ -72,6 +74,7 @@ public class MazeChunkLabyrinth : MazeChunk
 
         while (stack.Count > 0)
         {
+           // yield return new WaitForSeconds(_fusionWaitingSecond);
             MazeCell current = stack.Pop();
             List<MazeCell> neighbors = new();
 
@@ -105,10 +108,10 @@ public class MazeChunkLabyrinth : MazeChunk
     {
         if (neighbors.Count == 1)
             return neighbors[0];
-        
-        float totalWeight = neighbors.Count * _mergeWeight;
+
+        float totalWeight = neighbors.Count * 0.5f;
         float pick = Random.Range(0f, totalWeight);
-        int index = Mathf.FloorToInt(pick / _mergeWeight);
+        int index = Mathf.FloorToInt(pick / 0.5f);
         return neighbors[Mathf.Clamp(index, 0, neighbors.Count - 1)];
     }
 
@@ -185,5 +188,23 @@ public class MazeChunkLabyrinth : MazeChunk
             WallOrientation.Down => WallOrientation.Up,
             _ => wall
         };
+    }
+
+    public void RegenerateMaze()
+    {
+        foreach (var tiles in _wallDestroyed)
+        {
+            tiles.gameObject.SetActive(true);
+        }
+
+        _wallDestroyed.Clear();
+
+        for (int i = 0; i < _chunkCells.Count; i++)
+        {
+            _chunkCells[i]._visited = false;
+            _chunkCells[i]._cellNumber = i;
+        }
+
+        GenerateMazeFusion();
     }
 }

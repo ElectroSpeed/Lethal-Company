@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -9,6 +10,8 @@ public class MazeCell : MonoBehaviour
 
     [HideInInspector] public readonly List<MazeCell> _neighbordsCells = new();
     [HideInInspector] public bool _visited = false;
+
+    [SerializeField] private Transform _wallContainer;
 
     public void Init(int id)
     {
@@ -24,7 +27,6 @@ public class MazeCell : MonoBehaviour
 
     public void DestroyWall(WallOrientation orientation, bool isBorder, MazeChunkLabyrinth chunk)
     {
-        Transform walls = transform.GetChild(2);
         int wallIndex = orientation switch
         {
             WallOrientation.Left => 0,
@@ -33,9 +35,9 @@ public class MazeCell : MonoBehaviour
             WallOrientation.Down => 3,
             _ => -1
         };
-        if (wallIndex >= 0 && wallIndex < walls.childCount)
+        if (wallIndex >= 0 && wallIndex < _wallContainer.childCount)
         {
-            GameObject destroyedWall = walls.GetChild(wallIndex).gameObject;
+            GameObject destroyedWall = _wallContainer.GetChild(wallIndex).gameObject;
             destroyedWall.SetActive(false);
             if (!isBorder)
             {
@@ -44,5 +46,3 @@ public class MazeCell : MonoBehaviour
         }
     }
 }
-
-public enum WallOrientation { Right, Left, Up, Down }

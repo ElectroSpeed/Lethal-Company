@@ -8,6 +8,8 @@ public class MapManager : MonoBehaviour
     [Header("Map Settings")]
     [SerializeField] private MazeChunk _chunkLabyrinthPrefab;
     [SerializeField] private MazeChunk _chunkSafePrefab;
+    [SerializeField, Range(0.0f, 1.0f)] private float _connectionChance = 0.15f;
+
 
     [SerializeField, Min(1)] private int _width = 5;
     [SerializeField, Min(1)] private int _height = 5;
@@ -38,6 +40,7 @@ public class MapManager : MonoBehaviour
     {
         if (!_chunkLabyrinthPrefab || !_chunkSafePrefab)
         {
+            //  yield return null;
             return;
         }
 
@@ -64,7 +67,8 @@ public class MapManager : MonoBehaviour
 
                 if (currentChunk == null)
                     continue;
-                
+                //yield return new WaitForSeconds(0.25f);
+
                 if (x > 0)
                 {
                     MazeChunkLabyrinth leftChunk = _mapChunks[y * _width + (x - 1)].GetComponent<MazeChunkLabyrinth>();
@@ -84,19 +88,19 @@ public class MapManager : MonoBehaviour
         }
     }
 
-    private IEnumerator ConnectAdjacentChunks(MazeChunkLabyrinth labA, MazeChunkLabyrinth labB, WallOrientation direction, float connectionChance = 0.85f)
+    private IEnumerator ConnectAdjacentChunks(MazeChunkLabyrinth labA, MazeChunkLabyrinth labB, WallOrientation direction)
     {
-        yield return new WaitUntil(() => labA._isGenerated || labB._isGenerated);
+        yield return new WaitUntil(() => labA._isGenerated && labB._isGenerated);
         
         int width = labA._width;
         int height = labA._height;
 
-        switch (direction)
+        switch (direction) //TODO make 100% chance path 
         {
             case WallOrientation.Left:
                 for (int y = 0; y < height; y++)
                 {
-                    if (connectionChance <= Random.Range(0f, 1f))
+                    if (_connectionChance >= Random.Range(0f, 1f))
                     {
                         MazeCell leftCellA = labA._chunkCells[y * width + 0];
                         MazeCell rightCellB = labB._chunkCells[y * width + (width - 1)];
@@ -110,7 +114,7 @@ public class MapManager : MonoBehaviour
             case WallOrientation.Down:
                 for (int x = 0; x < width; x++)
                 {
-                    if (connectionChance <= Random.Range(0f, 1f))
+                    if (_connectionChance >= Random.Range(0f, 1f))
                     {
                         MazeCell bottomCellA = labA._chunkCells[0 * width + x];
                         MazeCell topCellB = labB._chunkCells[(height - 1) * width + x];
@@ -122,26 +126,8 @@ public class MapManager : MonoBehaviour
                 break;
         }
     }
-
-    [ContextMenu("TestGenerateWalls")]
-    public void TestGenerateWalls()
+    public void RegenerateChunkMaze(MazeChunkLabyrinth labyToRegenerate)
     {
-        foreach (MazeChunkLabyrinth laby in _mapChunks)
-        {
-            foreach (var tiles in laby._wallDestroyed)
-            {
-                tiles.gameObject.SetActive(true);
-            }
-            
-            laby._wallDestroyed.Clear();
-
-            for (int i = 0; i < laby._chunkCells.Count; i++)
-            {
-                laby._chunkCells[i]._visited = false;
-                laby._chunkCells[i]._cellNumber = i;
-            }
-            
-            laby.GenerateMazeFusion();
-        }
+        labyToRegenerate.RegenerateMaze();
     }
 }
