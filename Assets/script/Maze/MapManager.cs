@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class MapManager : MonoBehaviour
@@ -17,6 +18,7 @@ public class MapManager : MonoBehaviour
     private readonly List<MazeChunk> _mapChunks = new();
 
     public MazeChunkSafeZone _safeChunk;
+
 
     private void OnValidate()
     {
