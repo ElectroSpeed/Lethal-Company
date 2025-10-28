@@ -178,4 +178,46 @@ public class MapManager : MonoBehaviour
     {
         labyToRegenerate.RegenerateMaze();
     }
+
+    [ContextMenu("Map/Regenerate Random Maze")]
+    public void TEST_RegenerateFirstChunkLabyrinth()
+    {
+        MazeChunk labyToRegenerate = _mapChunks[0];
+        labyToRegenerate.RegenerateMaze();
+    }
+
+    [ContextMenu("Map/Close First Chunk Door")]
+    public void TEST_CloseFirstChunkDoor()
+    {
+        MazeChunk laby = _mapChunks[0];
+        CloseWallsForChunk(laby);
+    }
+
+    public void CloseWallsForChunk(MazeChunk chunk)
+    {
+        foreach (CellPair wallPair in chunk._doorPairs)
+        {
+            wallPair.localCell.CloseWall(wallPair.orientation);
+
+            WallOrientation opposite = wallPair.neighborCell.GetOppositeWallOrientation(wallPair.orientation);
+            wallPair.neighborCell.CloseWall(opposite);
+        }
+    }
+
+    [ContextMenu("Map/Open First Chunk Door")]
+    public void TEST_OpenFirstChunkDoor()
+    {
+        MazeChunk laby = _mapChunks[0];
+        ReopenChunkWall(laby);
+    }
+    public void ReopenChunkWall(MazeChunk chunk)
+    {
+        foreach (CellPair wallPair in chunk._doorPairs)
+        {
+            wallPair.localCell.DestroyWall(wallPair.orientation, true);
+
+            WallOrientation opposite = wallPair.neighborCell.GetOppositeWallOrientation(wallPair.orientation);
+            wallPair.neighborCell.DestroyWall(opposite, true);
+        }
+    }
 }

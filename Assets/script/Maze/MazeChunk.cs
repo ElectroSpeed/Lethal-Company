@@ -16,6 +16,7 @@ public abstract class MazeChunk : MonoBehaviour
 
     public List<CellPair> _doorPairs = new();
     public abstract void CallGenerateMaze();
+    public abstract void RegenerateMaze();
 
     protected virtual void Start()
     {

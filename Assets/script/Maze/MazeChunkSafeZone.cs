@@ -8,10 +8,15 @@ public class MazeChunkSafeZone : MazeChunk
     {
         Debug.Log($"[{name}] Safe zone générée.");
     }
+    public override void RegenerateMaze()
+    {
+        throw new System.NotImplementedException();
+    }
 
 
     public void OpenNeighbordWall()
     {
 
     }
+
 }

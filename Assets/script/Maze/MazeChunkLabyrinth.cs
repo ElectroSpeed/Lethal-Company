@@ -153,7 +153,7 @@ public class MazeChunkLabyrinth : MazeChunk
                 continue;
 
             cell.DestroyWall(dir, false, this);
-            neighbor.DestroyWall(GetOppositeWall(dir), false, this);
+            neighbor.DestroyWall(neighbor.GetOppositeWallOrientation(dir), false, this);
 
             destroyed++;
         }
@@ -170,20 +170,7 @@ public class MazeChunkLabyrinth : MazeChunk
             _ => null
         };
     }
-
-    private WallOrientation GetOppositeWall(WallOrientation wall)
-    {
-        return wall switch
-        {
-            WallOrientation.Right => WallOrientation.Left,
-            WallOrientation.Left => WallOrientation.Right,
-            WallOrientation.Up => WallOrientation.Down,
-            WallOrientation.Down => WallOrientation.Up,
-            _ => wall
-        };
-    }
-
-    public void RegenerateMaze()
+    public override void RegenerateMaze()
     {
         foreach (var tiles in _wallDestroyed)
         {
