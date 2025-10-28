@@ -6,6 +6,19 @@ public class SpawnPlayerManager : NetworkBehaviour
 {
     [SerializeField] private GameObject _playerPrefab;
     [SerializeField] private Transform _playerSpawnPos;
+    private bool _canSpawnPlayer;
+
+    private void OnEnable()
+    {
+        EventBus.Subscribe<bool>(EventType.MapGenerated, CanSpawnPlayer);
+    }
+    private void OnDisable()
+    {
+        EventBus.Subscribe<bool>(EventType.MapGenerated, CanSpawnPlayer);
+    }
+
+    private void CanSpawnPlayer(bool value) => _canSpawnPlayer = value;
+
 
     public override void OnNetworkSpawn()
     {
@@ -26,7 +39,7 @@ public class SpawnPlayerManager : NetworkBehaviour
 
     private IEnumerator SpawnPlayer(ulong clientId)
     {
-        yield return new WaitUntil(() => GetComponent<MapManager>()._safeChunk != null);
+        yield return new WaitUntil(() => _canSpawnPlayer);
 
         GameObject playerLobby = Instantiate(_playerPrefab, GetComponent<MapManager>()._safeChunk.transform.position + new Vector3(0, 2, 0), Quaternion.identity);
 

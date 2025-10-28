@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class MapManager : MonoBehaviour
@@ -16,7 +17,8 @@ public class MapManager : MonoBehaviour
 
     private readonly List<MazeChunk> _mapChunks = new();
 
-    public MazeChunk _safeChunk;
+    public MazeChunkSafeZone _safeChunk;
+
 
     private void OnValidate()
     {
@@ -32,19 +34,37 @@ public class MapManager : MonoBehaviour
         }
     }
 
-    private void Start()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private void Awake()
     {
         GenerateChunkGrid();
     }
 
     private void GenerateChunkGrid()
     {
-        //if (!_chunkLabyrinthPrefab || !_chunkSafePrefab)
-        //{
-        //    //  yield return null;
-        //    return;
-        //}
-
         _mapChunks.Clear();
 
         Vector3 startOffset = new Vector3(
@@ -62,20 +82,15 @@ public class MapManager : MonoBehaviour
 
                 MazeChunk prefab = isCenter ? _chunkSafePrefab : _chunkLabyrinthPrefab;
                 MazeChunk newChunk = Instantiate(prefab, pos, Quaternion.identity, transform);
-                if (isCenter) _safeChunk = newChunk;
+
                 _mapChunks.Add(newChunk);
 
-                //MazeChunkLabyrinth currentChunk = newChunk.GetComponent<MazeChunkLabyrinth>();
-                //if (currentChunk == null)
-                //{
-                //    print($"Chunck {newChunk.name} was on middle");
-                //    continue;
-                //}
-                //yield return new WaitForSeconds(0.25f);
+                if (isCenter) _safeChunk = newChunk.GetComponent<MazeChunkSafeZone>();
+
 
                 if (x > 0)
                 {
-                    MazeChunk leftChunk = _mapChunks[y * _width + (x - 1)]/*.GetComponent<MazeChunkLabyrinth>()*/;
+                    MazeChunk leftChunk = _mapChunks[y * _width + (x - 1)];
                     if (leftChunk is null) continue;
 
                     newChunk._neighbordsChunks.Add(leftChunk);
@@ -85,7 +100,7 @@ public class MapManager : MonoBehaviour
 
                 if (y > 0)
                 {
-                    MazeChunk downChunk = _mapChunks[(y - 1) * _width + x]/*.GetComponent<MazeChunkLabyrinth>()*/;
+                    MazeChunk downChunk = _mapChunks[(y - 1) * _width + x];
                     if (downChunk is null) continue;
 
 
@@ -95,6 +110,27 @@ public class MapManager : MonoBehaviour
                 }
             }
         }
+        StartCoroutine(MapGenerated());
+    }
+
+    private IEnumerator MapGenerated()
+    {
+        foreach (var a in _mapChunks)
+        {
+            yield return new WaitUntil(() => a._isGenerated);
+        }
+
+        OpenMiddleDoor();
+
+
+        EventBus.Publish(EventType.MapGenerated, true);
+    }
+
+
+
+    private void OpenMiddleDoor()
+    {
+        _safeChunk.TryOpenNeighbordWall();
     }
 
     private IEnumerator ConnectAdjacentChunks(MazeChunk labA, MazeChunk labB, WallOrientation direction)
@@ -151,6 +187,8 @@ public class MapManager : MonoBehaviour
 
     private void ConnectChunkOnLeftDirection(MazeChunk labA, MazeChunk labB, int y, int width)
     {
+        if (labA._chunkCells.Count <= 0 || labB._chunkCells.Count <= 0) return;
+
         MazeCell leftCellA = labA._chunkCells[y * width + 0];
         MazeCell rightCellB = labB._chunkCells[y * width + (width - 1)];
 
@@ -163,6 +201,8 @@ public class MapManager : MonoBehaviour
 
     private void ConnectChunkOnBottomDirection(MazeChunk labA, MazeChunk labB, int x, int width, int height)
     {
+        if (labA._chunkCells.Count <= 0 || labB._chunkCells.Count <= 0) return;
+
         MazeCell bottomCellA = labA._chunkCells[0 * width + x];
         MazeCell topCellB = labB._chunkCells[(height - 1) * width + x];
 
@@ -174,11 +214,15 @@ public class MapManager : MonoBehaviour
         labB.AddDoorPair(topCellB, bottomCellA, WallOrientation.Up);
 
     }
+
+
+
+
+    #region Utility function 
     public void RegenerateChunkMaze(MazeChunkLabyrinth labyToRegenerate)
     {
         labyToRegenerate.RegenerateMaze();
     }
-
     [ContextMenu("Map/Regenerate Random Maze")]
     public void TEST_RegenerateFirstChunkLabyrinth()
     {
@@ -220,4 +264,17 @@ public class MapManager : MonoBehaviour
             wallPair.neighborCell.DestroyWall(opposite, true);
         }
     }
+
+    [ContextMenu("TEST_OpenCenterWall")]
+    public void TEST_OpenCenterWall()
+    {
+        foreach (var chunk in _mapChunks)
+        {
+            if (chunk.GetComponent<MazeChunkSafeZone>() != null)
+            {
+                chunk.GetComponent<MazeChunkSafeZone>().TryOpenNeighbordWall();
+            }
+        }
+    }
+    #endregion
 }
