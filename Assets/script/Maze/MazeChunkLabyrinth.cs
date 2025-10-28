@@ -10,11 +10,7 @@ public class MazeChunkLabyrinth : MazeChunk
     [SerializeField, Range(0f, 1f)] private float _percentWallDestroyed = 0.15f;
     [SerializeField] private float _fusionWaitingSecond;
 
-    public List<MazeChunkLabyrinth> _neighbordsChunks = new();
     public List<GameObject> _wallDestroyed = new();
-
-    public bool _isGenerated;
-
     private int _iteration;
 
     public override void CallGenerateMaze()
@@ -68,7 +64,6 @@ public class MazeChunkLabyrinth : MazeChunk
 
         MazeCell start = _chunkCells[Random.Range(0, _chunkCells.Count)];
         start._visited = true;
-        start.ChangeColor();
         visited.Add(start);
         stack.Push(start);
 
@@ -90,8 +85,6 @@ public class MazeChunkLabyrinth : MazeChunk
                 MazeCell next = GetWeightedNeighbor(neighbors);
 
                 next._cellNumber = current._cellNumber;
-                next._cellColor = current._cellColor;
-                next.ChangeColor();
 
                 DestroyWallWithOrientation(current, next);
 
@@ -160,7 +153,7 @@ public class MazeChunkLabyrinth : MazeChunk
                 continue;
 
             cell.DestroyWall(dir, false, this);
-            neighbor.DestroyWall(GetOppositeWall(dir), false, this);
+            neighbor.DestroyWall(neighbor.GetOppositeWallOrientation(dir), false, this);
 
             destroyed++;
         }
@@ -177,20 +170,7 @@ public class MazeChunkLabyrinth : MazeChunk
             _ => null
         };
     }
-
-    private WallOrientation GetOppositeWall(WallOrientation wall)
-    {
-        return wall switch
-        {
-            WallOrientation.Right => WallOrientation.Left,
-            WallOrientation.Left => WallOrientation.Right,
-            WallOrientation.Up => WallOrientation.Down,
-            WallOrientation.Down => WallOrientation.Up,
-            _ => wall
-        };
-    }
-
-    public void RegenerateMaze()
+    public override void RegenerateMaze()
     {
         foreach (var tiles in _wallDestroyed)
         {

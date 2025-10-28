@@ -1,3 +1,5 @@
+using NUnit.Framework;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class MazeChunkSafeZone : MazeChunk
@@ -6,4 +8,15 @@ public class MazeChunkSafeZone : MazeChunk
     {
         Debug.Log($"[{name}] Safe zone générée.");
     }
+    public override void RegenerateMaze()
+    {
+        throw new System.NotImplementedException();
+    }
+
+
+    public void OpenNeighbordWall()
+    {
+
+    }
+
 }

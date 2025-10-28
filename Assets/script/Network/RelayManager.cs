@@ -13,11 +13,13 @@ using UnityEngine.SceneManagement;
 public class RelayManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _joinCodeText;
+    [SerializeField] private GameObject _hostButton;
     [SerializeField] private TMP_InputField _joinCodeInputField;
 
     [Header("Save Player Pseudo")]
     [SerializeField] private TMP_InputField _joinPlayerSpeudo;
     [SerializeField] private TMP_InputField _hostPlayerSpeudo;
+
 
     private async void Start()
     {
@@ -31,9 +33,9 @@ public class RelayManager : MonoBehaviour
     public async void StartRelay()
     {
         string joinCode = await StartHostWithRelay(4);
+        _hostButton.SetActive(true);
         PlayerPrefs.SetString("JoinCode", joinCode);
         _joinCodeText.text = joinCode;
-
     }
 
     public void ChangeScene()
