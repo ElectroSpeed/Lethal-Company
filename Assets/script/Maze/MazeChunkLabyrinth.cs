@@ -11,9 +11,6 @@ public class MazeChunkLabyrinth : MazeChunk
     [SerializeField] private float _fusionWaitingSecond;
 
     public List<GameObject> _wallDestroyed = new();
-
-    public bool _isGenerated;
-
     private int _iteration;
 
     public override void CallGenerateMaze()
