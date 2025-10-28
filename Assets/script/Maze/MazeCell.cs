@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 public class MazeCell : MonoBehaviour
 {
@@ -10,22 +9,16 @@ public class MazeCell : MonoBehaviour
     [HideInInspector] public readonly List<MazeCell> _neighbordsCells = new();
     [HideInInspector] public bool _visited = false;
 
+    [SerializeField] private Transform _wallContainer;
+
     public void Init(int id)
     {
         _cellNumber = id;
-        _cellColor = new Color(Random.value, Random.value, Random.value);
-        ChangeColor();
     }
 
-    public void ChangeColor()
+    private int GetWallIndex(WallOrientation orientation)
     {
-        transform.GetChild(0).GetChild(0).GetComponent<Renderer>().material.color = _cellColor;
-    }
-
-    public void DestroyWall(WallOrientation orientation)
-    {
-        Transform walls = transform.GetChild(2);
-        int wallIndex = orientation switch
+        return orientation switch
         {
             WallOrientation.Left => 0,
             WallOrientation.Right => 1,
@@ -33,9 +26,58 @@ public class MazeCell : MonoBehaviour
             WallOrientation.Down => 3,
             _ => -1
         };
-        if (wallIndex >= 0 && wallIndex < walls.childCount)
-            walls.GetChild(wallIndex).gameObject.SetActive(false);
+    }
+
+    public WallOrientation GetOppositeWallOrientation(WallOrientation dir)
+    {
+        return dir switch
+        {
+            WallOrientation.Up => WallOrientation.Down,
+            WallOrientation.Down => WallOrientation.Up,
+            WallOrientation.Left => WallOrientation.Right,
+            WallOrientation.Right => WallOrientation.Left,
+            _ => dir
+        };
+    }
+
+
+    public void DestroyWall(WallOrientation orientation, bool isBorder = false, MazeChunkLabyrinth chunk = null)
+    {
+        int wallIndex = GetWallIndex(orientation);
+
+        if (wallIndex >= 0 && wallIndex < _wallContainer.childCount)
+        {
+            GameObject destroyedWall = _wallContainer.GetChild(wallIndex).gameObject;
+            destroyedWall.SetActive(false);
+            if (!isBorder && chunk != null)
+            {
+                chunk._wallDestroyed.Add(destroyedWall);
+            }
+        }
+    }
+
+
+    public void CloseWall(WallOrientation orientation)
+    {
+        //Create Invisible Wall before lunch anim 
+        CloseWallAnim();
+
+        int wallIndex = GetWallIndex(orientation);
+
+        if (wallIndex >= 0 && wallIndex < _wallContainer.childCount)
+        {
+            GameObject closedWall = _wallContainer.GetChild(wallIndex).gameObject;
+            if (closedWall.activeSelf)
+            {
+                print("T'es un looser tu t'es trompé");
+            }
+
+            closedWall.SetActive(true);
+        }
+
+    }
+    public void CloseWallAnim()
+    {
+
     }
 }
-
-public enum WallOrientation { Right, Left, Up, Down }

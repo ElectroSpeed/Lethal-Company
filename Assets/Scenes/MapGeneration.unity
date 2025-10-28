@@ -408,9 +408,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _chunkLabyrinthPrefab: {fileID: 6038178114768875608, guid: fac6fc7900b6a7c4389d79628d415ad8, type: 3}
   _chunkSafePrefab: {fileID: 6038178114768875608, guid: f40d39b900b136048a92026f2a04374e, type: 3}
-  _width: 3
-  _height: 3
-  _chunkSize: {x: 75, y: 75}
+  _connectionChance: 0.15
+  _width: 5
+  _height: 5
+  _chunkSize: {x: 50, y: 50}
 --- !u!4 &1878539125
 Transform:
   m_ObjectHideFlags: 0

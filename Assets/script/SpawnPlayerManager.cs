@@ -1,3 +1,4 @@
+using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -20,7 +21,14 @@ public class SpawnPlayerManager : NetworkBehaviour
 
     private void OnClientConnected(ulong clientId)
     {
-        GameObject playerLobby = Instantiate(_playerPrefab, _playerSpawnPos.position, Quaternion.identity);
+        StartCoroutine(SpawnPlayer(clientId));
+    }
+
+    private IEnumerator SpawnPlayer(ulong clientId)
+    {
+        yield return new WaitUntil(() => GetComponent<MapManager>()._safeChunk != null);
+
+        GameObject playerLobby = Instantiate(_playerPrefab, GetComponent<MapManager>()._safeChunk.transform.position + new Vector3(0, 2, 0), Quaternion.identity);
 
         var netObj = playerLobby.GetComponent<NetworkObject>();
         netObj.SpawnAsPlayerObject(clientId);
