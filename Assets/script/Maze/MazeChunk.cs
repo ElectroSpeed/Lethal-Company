@@ -10,13 +10,18 @@ public abstract class MazeChunk : MonoBehaviour
     [Min(1)] public int _size = 5;
 
     [HideInInspector] public readonly List<MazeCell> _chunkCells = new();
-    [HideInInspector] public readonly List<MazeChunk> _neighborChunks = new();
     [HideInInspector] public List<MazeChunk> _neighbordsChunks = new();
     public bool _isGenerated;
 
     public List<CellPair> _doorPairs = new();
     public abstract void CallGenerateMaze();
     public abstract void RegenerateMaze();
+
+    private void OnValidate()
+    {
+        if (_width % 2 == 0) _width++;
+        if (_height % 2 == 0) _height++;
+    }
 
     protected virtual void Start()
     {

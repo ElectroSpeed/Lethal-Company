@@ -220,4 +220,16 @@ public class MapManager : MonoBehaviour
             wallPair.neighborCell.DestroyWall(opposite, true);
         }
     }
+
+    [ContextMenu("TEST_OpenCenterWall")]
+    public void TEST_OpenCenterWall()
+    {
+        foreach (var chunk in _mapChunks)
+        {
+            if (chunk.GetComponent<MazeChunkSafeZone>() != null)
+            {
+                chunk.GetComponent<MazeChunkSafeZone>().TryOpenNeighbordWall();
+            }
+        }
+    }
 }
