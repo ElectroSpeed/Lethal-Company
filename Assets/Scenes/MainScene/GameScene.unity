@@ -556,8 +556,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1679706743}
-  - component: {fileID: 1679706744}
   - component: {fileID: 1679706745}
+  - component: {fileID: 1679706744}
   - component: {fileID: 1679706746}
   - component: {fileID: 1679706747}
   m_Layer: 0
@@ -594,6 +594,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: caef32be93bf8b849ac4e7a60df00a5c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _chunkLabyrinthPrefab: {fileID: 6038178114768875608, guid: fac6fc7900b6a7c4389d79628d415ad8, type: 3}
   _chunkSafePrefab: {fileID: -699719046280674123, guid: f40d39b900b136048a92026f2a04374e, type: 3}
   _connectionChance: 0.15

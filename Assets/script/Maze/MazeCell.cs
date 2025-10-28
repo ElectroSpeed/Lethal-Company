@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
-public class MazeCell : MonoBehaviour
+public class MazeCell : NetworkBehaviour
 {
     public int _cellNumber;
     public Color _cellColor;
@@ -10,6 +11,12 @@ public class MazeCell : MonoBehaviour
     [HideInInspector] public bool _visited = false;
 
     [SerializeField] private Transform _wallContainer;
+
+    private void Awake()
+    {
+        if (_wallContainer == null)
+            _wallContainer = transform;
+    }
 
     public void Init(int id)
     {
@@ -40,44 +47,40 @@ public class MazeCell : MonoBehaviour
         };
     }
 
-
     public void DestroyWall(WallOrientation orientation, bool isBorder = false, MazeChunkLabyrinth chunk = null)
     {
         int wallIndex = GetWallIndex(orientation);
+        if (wallIndex < 0 || wallIndex >= _wallContainer.childCount)
+            return;
 
-        if (wallIndex >= 0 && wallIndex < _wallContainer.childCount)
-        {
-            GameObject destroyedWall = _wallContainer.GetChild(wallIndex).gameObject;
-            destroyedWall.SetActive(false);
-            if (!isBorder && chunk != null)
-            {
-                chunk._wallDestroyed.Add(destroyedWall);
-            }
-        }
+        GameObject destroyedWall = _wallContainer.GetChild(wallIndex).gameObject;
+        if (!destroyedWall.activeSelf) return;
+
+        destroyedWall.SetActive(false);
+        if (!isBorder && chunk != null)
+            chunk._wallDestroyed.Add(destroyedWall);
+
+        UpdateWallClientRpc(wallIndex, false);
     }
-
 
     public void CloseWall(WallOrientation orientation)
     {
-        //Create Invisible Wall before lunch anim 
-        CloseWallAnim();
-
         int wallIndex = GetWallIndex(orientation);
+        if (wallIndex < 0 || wallIndex >= _wallContainer.childCount)
+            return;
 
-        if (wallIndex >= 0 && wallIndex < _wallContainer.childCount)
-        {
-            GameObject closedWall = _wallContainer.GetChild(wallIndex).gameObject;
-            if (closedWall.activeSelf)
-            {
-                print("T'es un looser tu t'es trompé");
-            }
+        GameObject closedWall = _wallContainer.GetChild(wallIndex).gameObject;
+        closedWall.SetActive(true);
 
-            closedWall.SetActive(true);
-        }
-
+        UpdateWallClientRpc(wallIndex, true);
     }
-    public void CloseWallAnim()
-    {
 
+    [ClientRpc]
+    private void UpdateWallClientRpc(int wallIndex, bool active)
+    {
+        if (wallIndex < 0 || wallIndex >= _wallContainer.childCount)
+            return;
+
+        _wallContainer.GetChild(wallIndex).gameObject.SetActive(active);
     }
 }
