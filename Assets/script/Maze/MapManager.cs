@@ -1,24 +1,31 @@
 using System.Collections;
 using System.Collections.Generic;
+<<<<<<< Updated upstream
 using TMPro;
+=======
+using Unity.Netcode;
+>>>>>>> Stashed changes
 using UnityEngine;
 
-public class MapManager : MonoBehaviour
+public class MapManager : NetworkBehaviour
 {
     [Header("Map Settings")]
     [SerializeField] private MazeChunk _chunkLabyrinthPrefab;
     [SerializeField] private MazeChunk _chunkSafePrefab;
     [SerializeField, Range(0.0f, 1.0f)] private float _connectionChance = 0.15f;
 
-
     [SerializeField, Min(1)] private int _width = 5;
     [SerializeField, Min(1)] private int _height = 5;
     [SerializeField] private Vector2Int _chunkSize = new Vector2Int(50, 50);
 
     private readonly List<MazeChunk> _mapChunks = new();
+<<<<<<< Updated upstream
 
     public MazeChunkSafeZone _safeChunk;
 
+=======
+    public MazeChunk _safeChunk;
+>>>>>>> Stashed changes
 
     private void OnValidate()
     {
@@ -34,6 +41,7 @@ public class MapManager : MonoBehaviour
         }
     }
 
+<<<<<<< Updated upstream
 
 
 
@@ -59,8 +67,14 @@ public class MapManager : MonoBehaviour
 
 
     private void Awake()
+=======
+    public override void OnNetworkSpawn()
+>>>>>>> Stashed changes
     {
-        GenerateChunkGrid();
+        if (IsServer)
+        {
+            GenerateChunkGrid();
+        }
     }
 
     private void GenerateChunkGrid()
@@ -83,6 +97,7 @@ public class MapManager : MonoBehaviour
                 MazeChunk prefab = isCenter ? _chunkSafePrefab : _chunkLabyrinthPrefab;
                 MazeChunk newChunk = Instantiate(prefab, pos, Quaternion.identity, transform);
 
+<<<<<<< Updated upstream
                 _mapChunks.Add(newChunk);
 
                 if (isCenter) _safeChunk = newChunk.GetComponent<MazeChunkSafeZone>();
@@ -93,6 +108,21 @@ public class MapManager : MonoBehaviour
                     MazeChunk leftChunk = _mapChunks[y * _width + (x - 1)];
                     if (leftChunk is null) continue;
 
+=======
+                NetworkObject netObj = newChunk.GetComponent<NetworkObject>();
+                if (netObj != null)
+                    netObj.Spawn(true);
+
+                if (isCenter)
+                    _safeChunk = newChunk;
+
+                _mapChunks.Add(newChunk);
+
+                // Connexions entre chunks
+                if (x > 0)
+                {
+                    MazeChunk leftChunk = _mapChunks[y * _width + (x - 1)];
+>>>>>>> Stashed changes
                     newChunk._neighbordsChunks.Add(leftChunk);
                     leftChunk._neighbordsChunks.Add(newChunk);
                     StartCoroutine(ConnectAdjacentChunks(newChunk, leftChunk, WallOrientation.Left));
@@ -101,9 +131,12 @@ public class MapManager : MonoBehaviour
                 if (y > 0)
                 {
                     MazeChunk downChunk = _mapChunks[(y - 1) * _width + x];
+<<<<<<< Updated upstream
                     if (downChunk is null) continue;
 
 
+=======
+>>>>>>> Stashed changes
                     newChunk._neighbordsChunks.Add(downChunk);
                     downChunk._neighbordsChunks.Add(newChunk);
                     StartCoroutine(ConnectAdjacentChunks(newChunk, downChunk, WallOrientation.Down));
@@ -135,72 +168,52 @@ public class MapManager : MonoBehaviour
 
     private IEnumerator ConnectAdjacentChunks(MazeChunk labA, MazeChunk labB, WallOrientation direction)
     {
-        if (labA is not MazeChunkLabyrinth && labB is not MazeChunkLabyrinth)
-            yield break;
-
         yield return new WaitUntil(() => labA._isGenerated && labB._isGenerated);
+        ConnectChunksClientRpc(labA.NetworkObjectId, labB.NetworkObjectId, direction);
+    }
 
-        int width = labA._width;
-        int height = labA._height;
-        int doorCreatedCount = 0;
+    [ClientRpc]
+    private void ConnectChunksClientRpc(ulong aId, ulong bId, WallOrientation direction)
+    {
+        if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(aId, out var aObj)) return;
+        if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(bId, out var bObj)) return;
+
+        MazeChunk labA = aObj.GetComponent<MazeChunk>();
+        MazeChunk labB = bObj.GetComponent<MazeChunk>();
+
+        if (labA == null || labB == null) return;
 
         switch (direction)
         {
             case WallOrientation.Left:
-                {
-                    for (int y = 0; y < height; y++)
-                    {
-                        if (Random.value <= _connectionChance)
-                        {
-                            ConnectChunkOnLeftDirection(labA, labB, y, width);
-                            doorCreatedCount++;
-                        }
-                    }
-                    if (doorCreatedCount == 0)
-                    {
-                        int randomY = Random.Range(0, height);
-                        ConnectChunkOnLeftDirection(labA, labB, randomY, width);
-                    }
-                    break;
-                }
-
+                ConnectChunkOnLeftDirection(labA, labB, labA._height, labA._width);
+                break;
             case WallOrientation.Down:
-                {
-                    for (int x = 0; x < width; x++)
-                    {
-                        if (Random.value <= _connectionChance)
-                        {
-                            ConnectChunkOnBottomDirection(labA, labB, x, width, height);
-                            doorCreatedCount++;
-                        }
-                    }
-                    if (doorCreatedCount == 0)
-                    {
-                        int randomX = Random.Range(0, width);
-                        ConnectChunkOnBottomDirection(labA, labB, randomX, width, height);
-                    }
-                    break;
-                }
+                ConnectChunkOnBottomDirection(labA, labB, labA._width, labA._height);
+                break;
         }
     }
 
-
-    private void ConnectChunkOnLeftDirection(MazeChunk labA, MazeChunk labB, int y, int width)
+    private void ConnectChunkOnLeftDirection(MazeChunk labA, MazeChunk labB, int height, int width)
     {
+<<<<<<< Updated upstream
         if (labA._chunkCells.Count <= 0 || labB._chunkCells.Count <= 0) return;
 
         MazeCell leftCellA = labA._chunkCells[y * width + 0];
         MazeCell rightCellB = labB._chunkCells[y * width + (width - 1)];
 
+=======
+        int randomY = Random.Range(0, height);
+        MazeCell leftCellA = labA._chunkCells[randomY * width + 0];
+        MazeCell rightCellB = labB._chunkCells[randomY * width + (width - 1)];
+>>>>>>> Stashed changes
         leftCellA.DestroyWall(WallOrientation.Left, true, (MazeChunkLabyrinth)labA);
         rightCellB.DestroyWall(WallOrientation.Right, true, (MazeChunkLabyrinth)labB);
-
-        labA.AddDoorPair(leftCellA, rightCellB, WallOrientation.Left);
-        labB.AddDoorPair(rightCellB, leftCellA, WallOrientation.Right);
     }
 
-    private void ConnectChunkOnBottomDirection(MazeChunk labA, MazeChunk labB, int x, int width, int height)
+    private void ConnectChunkOnBottomDirection(MazeChunk labA, MazeChunk labB, int width, int height)
     {
+<<<<<<< Updated upstream
         if (labA._chunkCells.Count <= 0 || labB._chunkCells.Count <= 0) return;
 
         MazeCell bottomCellA = labA._chunkCells[0 * width + x];
@@ -263,6 +276,13 @@ public class MapManager : MonoBehaviour
             WallOrientation opposite = wallPair.neighborCell.GetOppositeWallOrientation(wallPair.orientation);
             wallPair.neighborCell.DestroyWall(opposite, true);
         }
+=======
+        int randomX = Random.Range(0, width);
+        MazeCell bottomCellA = labA._chunkCells[0 * width + randomX];
+        MazeCell topCellB = labB._chunkCells[(height - 1) * width + randomX];
+        bottomCellA.DestroyWall(WallOrientation.Down, true, (MazeChunkLabyrinth)labA);
+        topCellB.DestroyWall(WallOrientation.Up, true, (MazeChunkLabyrinth)labB);
+>>>>>>> Stashed changes
     }
 
     [ContextMenu("TEST_OpenCenterWall")]
