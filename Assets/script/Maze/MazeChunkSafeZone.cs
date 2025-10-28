@@ -19,12 +19,6 @@ public class MazeChunkSafeZone : MazeChunk
         if (_neighbordsChunks == null || _neighbordsChunks.Count < 4)
             return;
 
-        foreach (var neigh in _neighbordsChunks)
-        {
-            if (neigh == null || !neigh._isGenerated)
-                return;
-        }
-
         OpenNeighbordWall();
     }
 

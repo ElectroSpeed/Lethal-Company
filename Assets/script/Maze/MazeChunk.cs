@@ -25,9 +25,6 @@ public abstract class MazeChunk : MonoBehaviour
 
     protected virtual void Start()
     {
-        if (_cellPrefab == null)
-            return;
-
         CallGenerateMaze();
     }
     public void AddDoorPair(MazeCell localCell, MazeCell neighborCell, WallOrientation orientation)
