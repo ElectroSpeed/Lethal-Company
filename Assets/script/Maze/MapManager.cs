@@ -1,8 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
-public class MapManager : MonoBehaviour
+public class MapManager : NetworkBehaviour
 {
     [Header("Map Settings")]
     [SerializeField] private MazeChunk _chunkLabyrinthPrefab;
@@ -14,8 +17,7 @@ public class MapManager : MonoBehaviour
     private readonly List<MazeChunk> _mapChunks = new();
     public MazeChunkSafeZone _safeChunk;
 
-
-
+    public NetworkList<int> _chunkSeeds;
 
     private void OnValidate()
     {
@@ -32,14 +34,54 @@ public class MapManager : MonoBehaviour
     }
 
 
-
-
+    
     private void Awake()
     {
-        StartCoroutine(GenerateChunkGrid());
+        _chunkSeeds = new NetworkList<int>();
     }
 
-    private IEnumerator GenerateChunkGrid()
+    public override void OnNetworkSpawn()
+    {
+        if (IsServer)
+        {
+            StartCoroutine(GenerateChunkGrid());
+        }
+        else if (IsClient && !IsHost)
+        {
+            _chunkSeeds.OnListChanged += OnChunkSeedsChanged;
+            StartCoroutine(WaitMapIsGenerated());
+        }
+        
+    }
+    
+    public override void OnNetworkDespawn()
+    {
+        _chunkSeeds.OnListChanged -= OnChunkSeedsChanged;
+    }
+
+    private void OnChunkSeedsChanged(NetworkListEvent<int> changeEvent)
+    {
+        if (!IsServer && _chunkSeeds.Count == _width * _height)
+        {
+            Debug.Log("[CLIENT] All seeds received, regenerating map.");
+            
+            List<int> seedsCopy = new();
+            foreach (var seed in _chunkSeeds )
+            {
+                seedsCopy.Add(seed);
+            }
+            
+            StartCoroutine(GenerateChunkGrid(seedsCopy));
+        }
+    }
+
+
+    private IEnumerator WaitMapIsGenerated()
+    {
+        yield return new WaitUntil(() => _chunkSeeds != null && _chunkSeeds.Count == _width * _height);
+    }
+
+    private IEnumerator GenerateChunkGrid(List<int> seeds = null)
     {
         _mapChunks.Clear();
 
@@ -48,6 +90,8 @@ public class MapManager : MonoBehaviour
             0,
             -(_height / 2f) * _chunkSize.y
         );
+
+        List<int> chunkSeeds = new();
 
         for (int y = 0; y < _height; y++)
         {
@@ -58,12 +102,24 @@ public class MapManager : MonoBehaviour
 
                 MazeChunk prefab = isCenter ? _chunkSafePrefab : _chunkLabyrinthPrefab;
                 MazeChunk newChunk = Instantiate(prefab, pos, Quaternion.identity, transform);
+                
+                int seed = 0;
 
+                if (seeds == null)
+                {
+                    seed = Random.Range(0, int.MaxValue);
+                    chunkSeeds.Add(seed);
+                }
+                else
+                {
+                    seed = seeds[y * _height + x];
+                }
+                
+                newChunk._seed = seed;
                 _mapChunks.Add(newChunk);
 
                 if (isCenter) _safeChunk = newChunk.GetComponent<MazeChunkSafeZone>();
-
-
+                
                 if (x > 0)
                 {
                     MazeChunk leftChunk = _mapChunks[y * _width + (x - 1)];
@@ -81,7 +137,6 @@ public class MapManager : MonoBehaviour
                     MazeChunk downChunk = _mapChunks[(y - 1) * _width + x];
                     if (downChunk is null) continue;
 
-
                     newChunk._neighbordsChunks.Add(downChunk);
                     downChunk._neighbordsChunks.Add(newChunk);
 
@@ -90,8 +145,18 @@ public class MapManager : MonoBehaviour
                 }
             }
         }
+
+        if (IsServer)
+        {
+            foreach (var seed in chunkSeeds)
+            {
+                _chunkSeeds.Add(seed);
+            }
+        }
+
         yield return StartCoroutine(MapGenerated());
     }
+
 
     private IEnumerator MapGenerated()
     {
@@ -105,8 +170,6 @@ public class MapManager : MonoBehaviour
 
         EventBus.Publish(EventType.MapGenerated, true);
     }
-
-
 
     private void OpenMiddleDoor()
     {

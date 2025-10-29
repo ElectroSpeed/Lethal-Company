@@ -15,6 +15,7 @@ public class MazeChunkLabyrinth : MazeChunk
 
     public override void CallGenerateMaze()
     {
+        Random.InitState(_seed);
         GenerateGrid(_cellPrefab.gameObject, _width, _height, _size);
         GenerateMazeFusion();
     }
@@ -172,6 +173,8 @@ public class MazeChunkLabyrinth : MazeChunk
     }
     public override void RegenerateMaze()
     {
+        Random.InitState(_seed);
+        
         foreach (var tiles in _wallDestroyed)
         {
             tiles.gameObject.SetActive(true);
