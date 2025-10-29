@@ -41,43 +41,32 @@ public class MapManager : NetworkBehaviour
     private void OnEnable()
     {
         EventBus.Subscribe<bool>(EventType.AllPlayerWasConnected, CanStartMapGeneration);
-        Debug.Log("[MapManager] Subscribed to AllPlayerWasConnected event");
     }
 
     private void OnDisable()
     {
         EventBus.Unsubscribe<bool>(EventType.AllPlayerWasConnected, CanStartMapGeneration);
-        Debug.Log("[MapManager] Unsubscribed from AllPlayerWasConnected event");
     }
 
     public void CanStartMapGeneration(bool value)
     {
         _canStartMapGen = true;
-        Debug.Log("[MapManager] Received AllPlayerWasConnected event -> can start map generation");
     }
 
     public override void OnNetworkSpawn()
     {
-        Debug.Log($"``````````````````[MapManager] OnNetworkSpawn ({(IsServer ? "Server" : "Client")})``````````````````");
-
-        //StartCoroutine(WaitForPlayerConnected());
         _chunkSeeds.OnListChanged += OnChunkSeedsChanged;
     }
     public override void OnNetworkDespawn()
     {
         _chunkSeeds.OnListChanged -= OnChunkSeedsChanged;
-        Debug.Log("[MapManager] OnNetworkDespawn: unsubscribed from _chunkSeeds event");
     }
 
     public IEnumerator WaitForPlayerConnected()
     {
-        Debug.Log("[MapManager] Waiting for players to connect before generating map...");
         yield return new WaitUntil(() => _canStartMapGen == true);
-       //yield return new WaitForEndOfFrame();
-        Debug.Log("---------------------[MapManager - MAP] Try to all client to Generate map need filtrer..------------------- ");
         if (IsServer)
         {
-            Debug.Log("[MapManager] All players connected - starting server-side map generation");
             StartCoroutine(GenerateChunkGrid());
 
             for (int i = 0; i < _itemCountOnMap; i++)
@@ -87,7 +76,6 @@ public class MapManager : NetworkBehaviour
         }
         else
         {
-            Debug.Log("[MapManager] Client waiting for server to send chunk seeds...");
             OnChunkSeedsChanged(default);
             StartCoroutine(WaitMapIsGenerated());
         }
@@ -95,14 +83,10 @@ public class MapManager : NetworkBehaviour
 
     private void OnChunkSeedsChanged(NetworkListEvent<int> changeEvent)
     {
-        Debug.Log($"-------------[SERVER] Server Try to Regenerate Map )-------------------------------");
         if (IsServer || IsHost) return;
-
-        Debug.Log($"-------------[CLIENT] OnChunkSeedsChanged triggered ({_chunkSeeds.Count}/{_width * _height})-------------------------------");
 
         if (_chunkSeeds.Count == _width * _height)
         {
-            Debug.Log("[CLIENT] All seeds received, starting GenerateChunkGrid");
             List<int> seedsCopy = new();
             foreach (var seed in _chunkSeeds)
                 seedsCopy.Add(seed);
@@ -113,14 +97,11 @@ public class MapManager : NetworkBehaviour
 
     private IEnumerator WaitMapIsGenerated()
     {
-        Debug.Log("[CLIENT] WaitMapIsGenerated started, waiting for full seed list...");
         yield return new WaitUntil(() => _chunkSeeds != null && _chunkSeeds.Count == _width * _height);
-        Debug.Log("[CLIENT] All chunk seeds received. Ready to build map.");
     }
 
     private IEnumerator GenerateChunkGrid(List<int> seeds = null)
     {
-        Debug.Log($"[MAP] GenerateChunkGrid started on {(IsServer ? "SERVER" : "CLIENT")}");
 
         _mapChunks.Clear();
 
@@ -145,7 +126,6 @@ public class MapManager : NetworkBehaviour
                 {
                     seed = Random.Range(0, int.MaxValue);
                     chunkSeeds.Add(seed);
-                    Debug.Log($"[SERVER] Generated seed {seed} for chunk ({x},{y})");
                 }
                 else
                 {
@@ -156,12 +136,10 @@ public class MapManager : NetworkBehaviour
                 MazeChunk newChunk = Instantiate(prefab, pos, Quaternion.identity, transform);
                 newChunk.Initialize(seed);
                 _mapChunks.Add(newChunk);
-                Debug.Log($"[MAP] Chunk ({x},{y}) created -> {(isCenter ? "SAFE ZONE" : "LABYRINTH")} with seed {seed}");
 
                 if (isCenter)
                 {
                     _safeChunk = newChunk.GetComponent<MazeChunkSafeZone>();
-                    Debug.Log("[MAP] SafeChunk assigned.");
                 }
 
                 // Connexions horizontales
@@ -194,9 +172,6 @@ public class MapManager : NetworkBehaviour
         {
             foreach (var seed in chunkSeeds)
                 _chunkSeeds.Add(seed);
-
-            Debug.Log($"[SERVER] Added {chunkSeeds.Count} seeds to _chunkSeeds NetworkList");
-            Debug.Log($"[MAP] GenerateChunkGrid completed on {(IsServer ? "SERVER" : "CLIENT")}");
         }
 
         yield return StartCoroutine(MapGenerated());
@@ -204,18 +179,15 @@ public class MapManager : NetworkBehaviour
 
     private void OpenMiddleDoor()
     {
-        Debug.Log("[MAP] Opening middle door (safe zone neighbor walls)");
         _safeChunk.TryOpenNeighbordWall();
     }
 
     private IEnumerator MapGenerated()
     {
-        Debug.Log($"[MAP] Waiting for {_mapChunks.Count} chunks to be fully generated...");
         OpenMiddleDoor();
 
         yield return new WaitForEndOfFrame();
 
-        Debug.Log("[MAP] All chunks are ready -> publishing MapGenerated event");
         EventBus.Publish(EventType.MapGenerated, true);
     }
 
@@ -223,7 +195,6 @@ public class MapManager : NetworkBehaviour
     {
         if (!IsHost) return;
 
-        Debug.Log("[SERVER] Try to spawn collectible item");
 
         List<MazeChunkLabyrinth> chunksWithDeadEnds = new();
         foreach (var chunk in _mapChunks)
@@ -237,7 +208,6 @@ public class MapManager : NetworkBehaviour
 
         if (chunksWithDeadEnds.Count == 0)
         {
-            Debug.LogWarning("[SERVER] No valid dead-end chunk found for item placement!");
             return;
         }
 
@@ -247,7 +217,6 @@ public class MapManager : NetworkBehaviour
         selectedChunk._containItem = true;
 
         GameObject newItemObject = Instantiate(item.gameObject, selectedCell.transform.position + Vector3.up * 0.5f, Quaternion.identity);
-        Debug.Log($"[SERVER] Spawned local item {newItemObject.name} at {selectedCell.transform.position}");
 
         if (newItemObject.TryGetComponent(out Item newItem))
         {
@@ -259,8 +228,6 @@ public class MapManager : NetworkBehaviour
             {
                 newItemObject.AddComponent<NetworkObject>().Spawn(true);
             }
-
-            Debug.Log($"[SERVER] Item {newItemObject.name} spawned and replicated for all clients");
         }
     }
 
@@ -270,8 +237,6 @@ public class MapManager : NetworkBehaviour
             yield break;
 
         yield return new WaitUntil(() => labA._isGenerated && labB._isGenerated);
-
-        Debug.Log($"[MAP] Connecting chunks {labA.name} <-> {labB.name} ({direction})");
 
         int width = labA._width;
         int height = labA._height;
@@ -312,7 +277,6 @@ public class MapManager : NetworkBehaviour
                 break;
         }
 
-        Debug.Log($"[MAP] Connected {labA.name} <-> {labB.name} with {doorCreatedCount} door(s) ({direction})");
     }
 
     private void ConnectChunkOnLeftDirection(MazeChunk labA, MazeChunk labB, int y, int width)
