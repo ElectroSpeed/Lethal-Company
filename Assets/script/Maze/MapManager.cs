@@ -34,15 +34,6 @@ public class MapManager : MonoBehaviour
 
 
 
-
-
-
-
-
-
-
-
-
     private void Awake()
     {
         StartCoroutine(GenerateChunkGrid());

@@ -19,13 +19,15 @@ public class PlayerLobby : NetworkBehaviour
 
         if (IsServer)
         {
+            _isReady.Value = true;
             _isReadyButton.SetActive(false);
-
+            OnReadyChanged(default, true);
         }
         else if (IsClient && !IsHost)
         {
             _isReadyButton.SetActive(true);
-            OnReadyChanged(default, false);
+
+            SetClientNotReadyServerRpc();
         }
 
         if (IsOwner)
@@ -36,6 +38,12 @@ public class PlayerLobby : NetworkBehaviour
 
         OnNameChanged(default, _playerName.Value);
         OnReadyChanged(default, _isReady.Value);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetClientNotReadyServerRpc()
+    {
+        _isReady.Value = false;
     }
 
     private void OnNameChanged(FixedString32Bytes oldValue, FixedString32Bytes newValue)
