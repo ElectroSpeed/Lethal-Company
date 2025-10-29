@@ -8,14 +8,14 @@ public class MazeCell : MonoBehaviour
     [HideInInspector] public readonly List<MazeCell> _neighbordsCells = new();
     [HideInInspector] public bool _visited = false;
 
-    [SerializeField] private Transform _wallContainer;
+    [HideInInspector] public Transform _wallContainer;
 
     public void Init(int id)
     {
         _cellNumber = id;
     }
 
-    private int GetWallIndex(WallOrientation orientation)
+    public int GetWallIndex(WallOrientation orientation)
     {
         return orientation switch
         {
@@ -68,7 +68,7 @@ public class MazeCell : MonoBehaviour
             GameObject closedWall = _wallContainer.GetChild(wallIndex).gameObject;
             if (closedWall.activeSelf)
             {
-                print("T'es un looser tu t'es trompé");
+                print("T'es un looser tu t'es trompï¿½");
             }
 
             closedWall.SetActive(true);

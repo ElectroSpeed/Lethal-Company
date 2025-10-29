@@ -14,6 +14,10 @@ public class MapManager : NetworkBehaviour
     [SerializeField, Min(1)] private int _width = 5;
     [SerializeField, Min(1)] private int _height = 5;
     [SerializeField] private Vector2Int _chunkSize;
+    
+    [SerializeField, Min(1)] private int _itemCountOnMap;
+    [SerializeField, Min(1)] private Item _itemOnMap;
+    
     private readonly List<MazeChunk> _mapChunks = new();
     public MazeChunkSafeZone _safeChunk;
 
@@ -31,6 +35,8 @@ public class MapManager : NetworkBehaviour
                 _chunkLabyrinthPrefab._height * _chunkLabyrinthPrefab._size
             );
         }
+        
+        if (_itemCountOnMap >= ((_width * _height) / 2) - 1) _itemCountOnMap = ((_width * _height) / 2) - 1;
     }
 
 
@@ -167,6 +173,10 @@ public class MapManager : NetworkBehaviour
 
         OpenMiddleDoor();
 
+        for (int i = 0; i < _itemCountOnMap; i++)
+        {
+            PlaceItem(_itemOnMap);
+        }
 
         EventBus.Publish(EventType.MapGenerated, true);
     }
@@ -175,6 +185,30 @@ public class MapManager : NetworkBehaviour
     {
         _safeChunk.TryOpenNeighbordWall();
     }
+
+private void PlaceItem(Item item)
+{
+    List<MazeChunkLabyrinth> chunksWithDeadEnds = new();
+    foreach (var chunk in _mapChunks)
+    {
+        if (chunk.GetComponent<MazeChunkLabyrinth>().GetDeadEndCells().Count > 0 && chunk.GetComponent<MazeChunkLabyrinth>()._containItem == false)
+            chunksWithDeadEnds.Add(chunk.GetComponent<MazeChunkLabyrinth>());
+    }
+
+    if (chunksWithDeadEnds.Count == 0)
+    {
+        return;
+    }
+    
+    MazeChunkLabyrinth selectedChunk = chunksWithDeadEnds[Random.Range(0, chunksWithDeadEnds.Count)];
+    
+    List<MazeCell> deadEnds = selectedChunk.GetDeadEndCells();
+    MazeCell selectedCell = deadEnds[Random.Range(0, deadEnds.Count)];
+    selectedChunk._containItem = true;
+    
+    Instantiate(item.gameObject, selectedCell.transform.position + Vector3.up * 0.5f, Quaternion.identity);
+}
+
 
     private IEnumerator ConnectAdjacentChunks(MazeChunk labA, MazeChunk labB, WallOrientation direction)
     {

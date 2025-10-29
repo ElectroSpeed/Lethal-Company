@@ -11,6 +11,7 @@ public class MazeChunkLabyrinth : MazeChunk
     [SerializeField] private float _fusionWaitingSecond;
 
     public List<GameObject> _wallDestroyed = new();
+    public bool _containItem = false;
     private int _iteration;
 
     public override void CallGenerateMaze()
@@ -190,4 +191,34 @@ public class MazeChunkLabyrinth : MazeChunk
 
         GenerateMazeFusion();
     }
+
+    public List<MazeCell> GetDeadEndCells()
+    {
+        List<MazeCell> deadEnds = new();
+
+        foreach (var cell in _chunkCells)
+        {
+            int activeWallCount = 0;
+            
+            foreach (WallOrientation direction in System.Enum.GetValues(typeof(WallOrientation)))
+            {
+                int wallIndex = cell.GetWallIndex(direction);
+                if (wallIndex < 0) continue;
+
+                Transform wall = cell._wallContainer.GetChild(wallIndex);
+                if (wall.gameObject.activeSelf)
+                {
+                    activeWallCount++;
+                }
+            }
+            
+            if (activeWallCount == 3)
+            {
+                deadEnds.Add(cell);
+            }
+        }
+
+        return deadEnds;
+    }
+
 }
