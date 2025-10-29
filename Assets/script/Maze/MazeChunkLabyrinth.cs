@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -12,6 +12,7 @@ public class MazeChunkLabyrinth : MazeChunk
 
     public List<GameObject> _wallDestroyed = new();
     private int _iteration;
+    public bool _containItem;
 
     public override void CallGenerateMaze()
     {
@@ -24,7 +25,7 @@ public class MazeChunkLabyrinth : MazeChunk
     private void GenerateGrid(GameObject cellPrefab, int width, int height, int cellSize)
     {
         if (cellPrefab == null || width <= 0 || height <= 0 || cellSize <= 0)
-              return;
+            return;
 
         _chunkCells.Clear();
         _iteration = 0;
@@ -73,7 +74,7 @@ public class MazeChunkLabyrinth : MazeChunk
 
         while (stack.Count > 0)
         {
-           // yield return new WaitForSeconds(_fusionWaitingSecond);
+            // yield return new WaitForSeconds(_fusionWaitingSecond);
             MazeCell current = stack.Pop();
             List<MazeCell> neighbors = new();
 
@@ -177,7 +178,7 @@ public class MazeChunkLabyrinth : MazeChunk
     public override void RegenerateMaze()
     {
         Random.InitState(_seed);
-        
+
         foreach (var tiles in _wallDestroyed)
         {
             tiles.gameObject.SetActive(true);
@@ -192,5 +193,34 @@ public class MazeChunkLabyrinth : MazeChunk
         }
 
         GenerateMazeFusion();
+    }
+
+    public List<MazeCell> GetDeadEndCells()
+    {
+        List<MazeCell> deadEnds = new();
+
+        foreach (var cell in _chunkCells)
+        {
+            int activeWallCount = 0;
+
+            foreach (WallOrientation direction in System.Enum.GetValues(typeof(WallOrientation)))
+            {
+                int wallIndex = cell.GetWallIndex(direction);
+                if (wallIndex < 0) continue;
+
+                Transform wall = cell._wallContainer.GetChild(wallIndex);
+                if (wall.gameObject.activeSelf)
+                {
+                    activeWallCount++;
+                }
+            }
+
+            if (activeWallCount == 3)
+            {
+                deadEnds.Add(cell);
+            }
+        }
+
+        return deadEnds;
     }
 }

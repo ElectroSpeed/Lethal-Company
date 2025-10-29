@@ -73,8 +73,6 @@ public class PlayerController : NetworkBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-
-        Debug.Log($"Spawned player {OwnerClientId}, IsOwner={IsOwner}");
     }
 
     private void FixedUpdate()
