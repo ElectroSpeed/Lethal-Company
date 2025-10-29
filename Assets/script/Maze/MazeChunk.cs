@@ -8,6 +8,8 @@ public abstract class MazeChunk : MonoBehaviour
     [Min(1)] public int _width = 10;
     [Min(1)] public int _height = 10;
     [Min(1)] public int _size = 5;
+    
+    public int _seed;
 
     [HideInInspector] public readonly List<MazeCell> _chunkCells = new();
     [HideInInspector] public List<MazeChunk> _neighbordsChunks = new();
