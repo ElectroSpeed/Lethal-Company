@@ -24,10 +24,20 @@ public class LobbyManager : NetworkBehaviour
         _hostjoinCode.color = Color.red;
 
 
-        if (/*clients.Count == 1 && */NetworkManager.Singleton.IsHost)
+        if (NetworkManager.Singleton.IsHost)
         {
             _startGameButton.SetActive(true);
             return;
+        }
+
+        CheckAllPlayersReady();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!IsServer)
+        {
+            _hostjoinCode.transform.parent.gameObject.SetActive(false); 
         }
     }
 

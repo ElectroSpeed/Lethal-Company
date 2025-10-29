@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 
 public class MapManager : MonoBehaviour
@@ -9,15 +8,13 @@ public class MapManager : MonoBehaviour
     [SerializeField] private MazeChunk _chunkLabyrinthPrefab;
     [SerializeField] private MazeChunk _chunkSafePrefab;
     [SerializeField, Range(0.0f, 1.0f)] private float _connectionChance = 0.15f;
-
-
     [SerializeField, Min(1)] private int _width = 5;
     [SerializeField, Min(1)] private int _height = 5;
-    [SerializeField] private Vector2Int _chunkSize = new Vector2Int(50, 50);
-
+    [SerializeField] private Vector2Int _chunkSize;
     private readonly List<MazeChunk> _mapChunks = new();
-
     public MazeChunkSafeZone _safeChunk;
+
+
 
 
     private void OnValidate()
@@ -46,24 +43,12 @@ public class MapManager : MonoBehaviour
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     private void Awake()
     {
-        GenerateChunkGrid();
+        StartCoroutine(GenerateChunkGrid());
     }
 
-    private void GenerateChunkGrid()
+    private IEnumerator GenerateChunkGrid()
     {
         _mapChunks.Clear();
 
@@ -95,6 +80,8 @@ public class MapManager : MonoBehaviour
 
                     newChunk._neighbordsChunks.Add(leftChunk);
                     leftChunk._neighbordsChunks.Add(newChunk);
+
+                    if (newChunk is MazeChunkSafeZone || leftChunk is MazeChunkSafeZone) continue;
                     StartCoroutine(ConnectAdjacentChunks(newChunk, leftChunk, WallOrientation.Left));
                 }
 
@@ -106,11 +93,13 @@ public class MapManager : MonoBehaviour
 
                     newChunk._neighbordsChunks.Add(downChunk);
                     downChunk._neighbordsChunks.Add(newChunk);
+
+                    if (newChunk is MazeChunkSafeZone || downChunk is MazeChunkSafeZone) continue;
                     StartCoroutine(ConnectAdjacentChunks(newChunk, downChunk, WallOrientation.Down));
                 }
             }
         }
-        StartCoroutine(MapGenerated());
+        yield return StartCoroutine(MapGenerated());
     }
 
     private IEnumerator MapGenerated()

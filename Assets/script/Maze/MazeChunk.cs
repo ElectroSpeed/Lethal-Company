@@ -36,11 +36,4 @@ public abstract class MazeChunk : MonoBehaviour
             orientation = orientation
         });
     }
-
-    public void CloseWallAt()
-    {
-
-    }
-
-
 }

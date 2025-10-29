@@ -4,7 +4,6 @@ using UnityEngine;
 public class MazeCell : MonoBehaviour
 {
     public int _cellNumber;
-    public Color _cellColor;
 
     [HideInInspector] public readonly List<MazeCell> _neighbordsCells = new();
     [HideInInspector] public bool _visited = false;

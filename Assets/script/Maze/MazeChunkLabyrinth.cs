@@ -22,7 +22,7 @@ public class MazeChunkLabyrinth : MazeChunk
     private void GenerateGrid(GameObject cellPrefab, int width, int height, int cellSize)
     {
         if (cellPrefab == null || width <= 0 || height <= 0 || cellSize <= 0)
-             return ;
+              return;
 
         _chunkCells.Clear();
         _iteration = 0;
