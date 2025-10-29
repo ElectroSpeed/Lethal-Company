@@ -8,14 +8,14 @@ public class MazeCell : MonoBehaviour
     [HideInInspector] public readonly List<MazeCell> _neighbordsCells = new();
     [HideInInspector] public bool _visited = false;
 
-    [SerializeField] private Transform _wallContainer;
+    public Transform _wallContainer;
 
     public void Init(int id)
     {
         _cellNumber = id;
     }
 
-    private int GetWallIndex(WallOrientation orientation)
+    public int GetWallIndex(WallOrientation orientation)
     {
         return orientation switch
         {
@@ -40,7 +40,7 @@ public class MazeCell : MonoBehaviour
     }
 
 
-    public void DestroyWall(WallOrientation orientation, bool isBorder = false, MazeChunkLabyrinth chunk = null, bool isSpawnWall = false)
+    public void DestroyWall(WallOrientation orientation, bool isBorder = false, MazeChunkLabyrinth chunk = null)
     {
         int wallIndex = GetWallIndex(orientation);
 
@@ -53,17 +53,7 @@ public class MazeCell : MonoBehaviour
                 chunk._wallDestroyed.Add(destroyedWall);
             }
         }
-        if (isSpawnWall)
-        {
-            UpdateWallStateForServerRpc();
-        }
     }
-
-    public void UpdateWallStateForServerRpc()
-    {
-
-    }
-
 
     public void CloseWall(WallOrientation orientation)
     {

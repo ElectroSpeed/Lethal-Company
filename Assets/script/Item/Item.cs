@@ -12,9 +12,9 @@ public class Item : NetworkBehaviour, IInteractible
     [SerializeField, Range(min: 1, max: 10)] private float _detectionArea = 2f;
     private SphereCollider _collider;
 
-    protected virtual void Awake()
+    public override void OnNetworkSpawn()
     {
-        Initialize();
+        Initialize();   
     }
     protected virtual void Initialize()
     {

@@ -602,6 +602,8 @@ MonoBehaviour:
   _height: 5
   _chunkSize: {x: 25, y: 25}
   _safeChunk: {fileID: 0}
+  _itemCountOnMap: 11
+  _itemOnMap: {fileID: 7045465990555162199, guid: 3dd737de0de32724f9924302cd0632cf, type: 3}
 --- !u!114 &1679706745
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -641,7 +643,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   _playerPrefab: {fileID: 5797118620505167581, guid: 320572a0d72c34148a17307a42ce930b, type: 3}
-  _playerSpawnPos: {fileID: 0}
+  _mapManager: {fileID: 0}
 --- !u!114 &1679706747
 MonoBehaviour:
   m_ObjectHideFlags: 0
