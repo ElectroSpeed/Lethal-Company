@@ -5,7 +5,6 @@ using UnityEngine;
 public class SpawnPlayerManager : NetworkBehaviour
 {
     [SerializeField] private GameObject _playerPrefab;
-    [SerializeField] private Transform _playerSpawnPos;
     private bool _canSpawnPlayer;
 
     private void OnEnable()
