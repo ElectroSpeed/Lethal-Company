@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using UnityEngine;
-
 public class MazeChunkSafeZone : MazeChunk
 {
     public override void CallGenerateMaze()

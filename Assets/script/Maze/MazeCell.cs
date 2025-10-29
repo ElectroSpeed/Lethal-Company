@@ -40,7 +40,7 @@ public class MazeCell : MonoBehaviour
     }
 
 
-    public void DestroyWall(WallOrientation orientation, bool isBorder = false, MazeChunkLabyrinth chunk = null)
+    public void DestroyWall(WallOrientation orientation, bool isBorder = false, MazeChunkLabyrinth chunk = null, bool isSpawnWall = false)
     {
         int wallIndex = GetWallIndex(orientation);
 
@@ -53,6 +53,15 @@ public class MazeCell : MonoBehaviour
                 chunk._wallDestroyed.Add(destroyedWall);
             }
         }
+        if (isSpawnWall)
+        {
+            UpdateWallStateForServerRpc();
+        }
+    }
+
+    public void UpdateWallStateForServerRpc()
+    {
+
     }
 
 

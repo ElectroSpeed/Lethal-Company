@@ -27,7 +27,7 @@ public class PlayerLobby : NetworkBehaviour
         {
             _isReadyButton.SetActive(true);
 
-            SetClientNotReadyServerRpc();
+           // SetClientNotReadyServerRpc();
         }
 
         if (IsOwner)
@@ -81,7 +81,6 @@ public class PlayerLobby : NetworkBehaviour
 
     public bool IsReady()
     {
-        if (IsHost) { return true; }
         return _isReady.Value;
     }
 }

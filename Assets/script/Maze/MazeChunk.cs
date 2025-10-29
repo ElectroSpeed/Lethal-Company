@@ -8,16 +8,16 @@ public abstract class MazeChunk : MonoBehaviour
     [Min(1)] public int _width = 10;
     [Min(1)] public int _height = 10;
     [Min(1)] public int _size = 5;
-    
-    public int _seed;
+
+    protected int _seed;
 
     [HideInInspector] public readonly List<MazeCell> _chunkCells = new();
-    [HideInInspector] public List<MazeChunk> _neighbordsChunks = new();
+    /*[HideInInspector]*/ public List<MazeChunk> _neighbordsChunks = new();
     public bool _isGenerated;
 
     public List<CellPair> _doorPairs = new();
     public abstract void CallGenerateMaze();
-    public abstract void RegenerateMaze();
+    public abstract void RegenerateMaze();  
 
     private void OnValidate()
     {
@@ -25,8 +25,9 @@ public abstract class MazeChunk : MonoBehaviour
         if (_height % 2 == 0) _height++;
     }
 
-    protected virtual void Start()
+    public void Initialize(int seed)
     {
+        _seed = seed;
         CallGenerateMaze();
     }
     public void AddDoorPair(MazeCell localCell, MazeCell neighborCell, WallOrientation orientation)

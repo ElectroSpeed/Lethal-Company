@@ -52,7 +52,7 @@ public class LobbyManager : NetworkBehaviour
         foreach (var client in clients)
         {
             PlayerLobby playerLobby = client.PlayerObject.GetComponent<PlayerLobby>();
-            if (playerLobby == null || !playerLobby.IsReady())
+            if (playerLobby == null || playerLobby.IsReady() == false)
             {
                 allReady = false;
                 break;

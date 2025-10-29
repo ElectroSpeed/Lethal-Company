@@ -17,7 +17,7 @@ public class MapManager : NetworkBehaviour
     private readonly List<MazeChunk> _mapChunks = new();
     public MazeChunkSafeZone _safeChunk;
 
-    public NetworkList<int> _chunkSeeds;
+    public NetworkList<int> _chunkSeeds = new();
 
     private void OnValidate()
     {
@@ -32,28 +32,21 @@ public class MapManager : NetworkBehaviour
             );
         }
     }
-
-
-    
-    private void Awake()
-    {
-        _chunkSeeds = new NetworkList<int>();
-    }
-
     public override void OnNetworkSpawn()
     {
+        _chunkSeeds.OnListChanged += OnChunkSeedsChanged;
+
         if (IsServer)
         {
             StartCoroutine(GenerateChunkGrid());
         }
-        else if (IsClient && !IsHost)
+        else
         {
-            _chunkSeeds.OnListChanged += OnChunkSeedsChanged;
+            OnChunkSeedsChanged(default);
             StartCoroutine(WaitMapIsGenerated());
         }
-        
     }
-    
+
     public override void OnNetworkDespawn()
     {
         _chunkSeeds.OnListChanged -= OnChunkSeedsChanged;
@@ -61,16 +54,15 @@ public class MapManager : NetworkBehaviour
 
     private void OnChunkSeedsChanged(NetworkListEvent<int> changeEvent)
     {
-        if (!IsServer && _chunkSeeds.Count == _width * _height)
+        if (IsServer) return;
+
+        if (_chunkSeeds.Count == _width * _height)
         {
-            Debug.Log("[CLIENT] All seeds received, regenerating map.");
-            
             List<int> seedsCopy = new();
-            foreach (var seed in _chunkSeeds )
+            foreach (var seed in _chunkSeeds)
             {
                 seedsCopy.Add(seed);
             }
-            
             StartCoroutine(GenerateChunkGrid(seedsCopy));
         }
     }
@@ -100,12 +92,10 @@ public class MapManager : NetworkBehaviour
                 Vector3 pos = new Vector3(x * _chunkSize.x, 0, y * _chunkSize.y) + startOffset;
                 bool isCenter = (x == _width / 2 && y == _height / 2);
 
-                MazeChunk prefab = isCenter ? _chunkSafePrefab : _chunkLabyrinthPrefab;
-                MazeChunk newChunk = Instantiate(prefab, pos, Quaternion.identity, transform);
-                
+
                 int seed = 0;
 
-                if (seeds == null)
+                if ((seeds == null || seeds.Count <= 0) && IsServer)
                 {
                     seed = Random.Range(0, int.MaxValue);
                     chunkSeeds.Add(seed);
@@ -114,12 +104,15 @@ public class MapManager : NetworkBehaviour
                 {
                     seed = seeds[y * _height + x];
                 }
-                
-                newChunk._seed = seed;
+
+                MazeChunk prefab = isCenter ? _chunkSafePrefab : _chunkLabyrinthPrefab;
+                MazeChunk newChunk = Instantiate(prefab, pos, Quaternion.identity, transform);
+                newChunk.Initialize(seed);
+
                 _mapChunks.Add(newChunk);
 
                 if (isCenter) _safeChunk = newChunk.GetComponent<MazeChunkSafeZone>();
-                
+
                 if (x > 0)
                 {
                     MazeChunk leftChunk = _mapChunks[y * _width + (x - 1)];
@@ -128,7 +121,6 @@ public class MapManager : NetworkBehaviour
                     newChunk._neighbordsChunks.Add(leftChunk);
                     leftChunk._neighbordsChunks.Add(newChunk);
 
-                    if (newChunk is MazeChunkSafeZone || leftChunk is MazeChunkSafeZone) continue;
                     StartCoroutine(ConnectAdjacentChunks(newChunk, leftChunk, WallOrientation.Left));
                 }
 
@@ -140,12 +132,10 @@ public class MapManager : NetworkBehaviour
                     newChunk._neighbordsChunks.Add(downChunk);
                     downChunk._neighbordsChunks.Add(newChunk);
 
-                    if (newChunk is MazeChunkSafeZone || downChunk is MazeChunkSafeZone) continue;
                     StartCoroutine(ConnectAdjacentChunks(newChunk, downChunk, WallOrientation.Down));
                 }
             }
         }
-
         if (IsServer)
         {
             foreach (var seed in chunkSeeds)
@@ -154,9 +144,14 @@ public class MapManager : NetworkBehaviour
             }
         }
 
+        OpenMiddleDoor();
+
         yield return StartCoroutine(MapGenerated());
     }
-
+    private void OpenMiddleDoor()
+    {
+        _safeChunk.TryOpenNeighbordWall();
+    }
 
     private IEnumerator MapGenerated()
     {
@@ -164,18 +159,8 @@ public class MapManager : NetworkBehaviour
         {
             yield return new WaitUntil(() => a._isGenerated);
         }
-
-        OpenMiddleDoor();
-
-
         EventBus.Publish(EventType.MapGenerated, true);
     }
-
-    private void OpenMiddleDoor()
-    {
-        _safeChunk.TryOpenNeighbordWall();
-    }
-
     private IEnumerator ConnectAdjacentChunks(MazeChunk labA, MazeChunk labB, WallOrientation direction)
     {
         if (labA is not MazeChunkLabyrinth && labB is not MazeChunkLabyrinth)

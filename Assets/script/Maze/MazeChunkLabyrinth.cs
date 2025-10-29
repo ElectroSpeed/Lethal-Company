@@ -16,6 +16,7 @@ public class MazeChunkLabyrinth : MazeChunk
     public override void CallGenerateMaze()
     {
         Random.InitState(_seed);
+
         GenerateGrid(_cellPrefab.gameObject, _width, _height, _size);
         GenerateMazeFusion();
     }
@@ -35,7 +36,9 @@ public class MazeChunkLabyrinth : MazeChunk
             {
                 Vector3 pos = new Vector3(x * cellSize, 0, y * cellSize) + worldOffset;
                 MazeCell newCell = Instantiate(cellPrefab, pos, Quaternion.identity, transform).GetComponent<MazeCell>();
+
                 newCell.Init(_iteration);
+
                 _chunkCells.Add(newCell);
 
                 if (x > 0)

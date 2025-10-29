@@ -49,6 +49,11 @@ public class LobbySlotManager : NetworkBehaviour
 
         _playerSlotIndex[clientId] = slotIndex;
 
+        if (slotIndex > 1)
+        {
+            playerLobby.GetComponent<PlayerLobby>().ToggleReady();
+        }
+
         LobbyManager.Instance.CheckAllPlayersReady();
     }
 
@@ -58,6 +63,7 @@ public class LobbySlotManager : NetworkBehaviour
         {
             _playerSlotIndex.Remove(clientId);
         }
+
         LobbyManager.Instance.CheckAllPlayersReady();
     }
 
