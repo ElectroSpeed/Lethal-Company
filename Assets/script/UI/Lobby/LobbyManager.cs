@@ -24,10 +24,20 @@ public class LobbyManager : NetworkBehaviour
         _hostjoinCode.color = Color.red;
 
 
-        if (/*clients.Count == 1 && */NetworkManager.Singleton.IsHost)
+        if (NetworkManager.Singleton.IsHost)
         {
             _startGameButton.SetActive(true);
             return;
+        }
+
+        CheckAllPlayersReady();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!IsServer)
+        {
+            _hostjoinCode.transform.parent.gameObject.SetActive(false); 
         }
     }
 
@@ -42,7 +52,7 @@ public class LobbyManager : NetworkBehaviour
         foreach (var client in clients)
         {
             PlayerLobby playerLobby = client.PlayerObject.GetComponent<PlayerLobby>();
-            if (playerLobby == null || !playerLobby.IsReady())
+            if (playerLobby == null || playerLobby.IsReady() == false)
             {
                 allReady = false;
                 break;

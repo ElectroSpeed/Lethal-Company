@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.LowLevel;
 
 public class LobbySlotManager : NetworkBehaviour
 {
@@ -49,6 +48,13 @@ public class LobbySlotManager : NetworkBehaviour
         netObj.SpawnAsPlayerObject(clientId);
 
         _playerSlotIndex[clientId] = slotIndex;
+
+        if (slotIndex > 1)
+        {
+            playerLobby.GetComponent<PlayerLobby>().ToggleReady();
+        }
+
+        LobbyManager.Instance.CheckAllPlayersReady();
     }
 
     private void OnClientDisconnected(ulong clientId)
@@ -57,6 +63,8 @@ public class LobbySlotManager : NetworkBehaviour
         {
             _playerSlotIndex.Remove(clientId);
         }
+
+        LobbyManager.Instance.CheckAllPlayersReady();
     }
 
     private int GetFirstFreeSlot()

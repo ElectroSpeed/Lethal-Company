@@ -77,8 +77,6 @@ public class RelayManager : MonoBehaviour
             pseudo = "client_ " + Random.Range(1000, 9999);
         }
         PlayerPrefs.SetString("PlayerName", pseudo);
-
-        NetworkManager.Singleton.SceneManager.LoadScene("LobbyScene", LoadSceneMode.Single);
     }
 
     private async Task<string> StartHostWithRelay(int maxConnection = 4)

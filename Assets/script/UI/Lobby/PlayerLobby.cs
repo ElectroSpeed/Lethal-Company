@@ -14,27 +14,36 @@ public class PlayerLobby : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (IsOwner)
-        {
-            _isReadyButton.SetActive(!IsServer);
-            _isReady.Value = true;
-        }
-        else
-        {
-            _isReadyButton.SetActive(false);
-        }
-
         _playerName.OnValueChanged += OnNameChanged;
         _isReady.OnValueChanged += OnReadyChanged;
 
-        OnNameChanged(default, _playerName.Value);
-        OnReadyChanged(default, _isReady.Value);
+        if (IsServer)
+        {
+            _isReady.Value = true;
+            _isReadyButton.SetActive(false);
+            OnReadyChanged(default, true);
+        }
+        else if (IsClient && !IsHost)
+        {
+            _isReadyButton.SetActive(true);
+
+           // SetClientNotReadyServerRpc();
+        }
 
         if (IsOwner)
         {
             string playerName = PlayerPrefs.GetString("PlayerName", $"Player_{OwnerClientId}");
             SubmitNameServerRpc(playerName);
         }
+
+        OnNameChanged(default, _playerName.Value);
+        OnReadyChanged(default, _isReady.Value);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetClientNotReadyServerRpc()
+    {
+        _isReady.Value = false;
     }
 
     private void OnNameChanged(FixedString32Bytes oldValue, FixedString32Bytes newValue)
@@ -72,7 +81,6 @@ public class PlayerLobby : NetworkBehaviour
 
     public bool IsReady()
     {
-        if(IsOwner) {return true;}
         return _isReady.Value;
     }
 }
