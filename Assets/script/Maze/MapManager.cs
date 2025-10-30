@@ -17,12 +17,9 @@ public class MapManager : NetworkBehaviour
     private readonly List<MazeChunk> _mapChunks = new();
     public MazeChunkSafeZone _safeChunk;
 
-    public NetworkList<int> _chunkSeeds = new();
-
     [SerializeField, Min(1)] private int _itemCountOnMap;
     [SerializeField, Min(1)] private Item _itemOnMap;
 
-    private bool _canStartMapGen;
     private void OnValidate()
     {
         if (_width % 2 == 0) _width++;
@@ -38,71 +35,22 @@ public class MapManager : NetworkBehaviour
 
         if (_itemCountOnMap >= ((_width * _height) / 2) - 1) _itemCountOnMap = ((_width * _height) / 2) - 1;
     }
-    private void OnEnable()
-    {
-        EventBus.Subscribe<bool>(EventType.AllPlayerWasConnected, CanStartMapGeneration);
-    }
 
-    private void OnDisable()
+    public void StartMapGeneration()
     {
-        EventBus.Unsubscribe<bool>(EventType.AllPlayerWasConnected, CanStartMapGeneration);
-    }
+        if (!IsServer) return;
 
-    public void CanStartMapGeneration(bool value)
-    {
-        _canStartMapGen = true;
-    }
+        GenerateChunkGrid();
 
-    public override void OnNetworkSpawn()
-    {
-        _chunkSeeds.OnListChanged += OnChunkSeedsChanged;
-    }
-    public override void OnNetworkDespawn()
-    {
-        _chunkSeeds.OnListChanged -= OnChunkSeedsChanged;
-    }
-
-    public IEnumerator WaitForPlayerConnected()
-    {
-        yield return new WaitUntil(() => _canStartMapGen == true);
-        if (IsServer)
+        for (int i = 0; i < _itemCountOnMap; i++)
         {
-            StartCoroutine(GenerateChunkGrid());
-
-            for (int i = 0; i < _itemCountOnMap; i++)
-            {
-                PlaceItem(_itemOnMap);
-            }
-        }
-        else
-        {
-            OnChunkSeedsChanged(default);
-            StartCoroutine(WaitMapIsGenerated());
+            PlaceItem(_itemOnMap);
         }
     }
 
-    private void OnChunkSeedsChanged(NetworkListEvent<int> changeEvent)
+
+    private void GenerateChunkGrid(List<int> seeds = null)
     {
-        if (IsServer || IsHost) return;
-
-        if (_chunkSeeds.Count == _width * _height)
-        {
-            List<int> seedsCopy = new();
-            foreach (var seed in _chunkSeeds)
-                seedsCopy.Add(seed);
-
-            StartCoroutine(GenerateChunkGrid(seedsCopy));
-        }
-    }
-
-    private IEnumerator WaitMapIsGenerated()
-    {
-        yield return new WaitUntil(() => _chunkSeeds != null && _chunkSeeds.Count == _width * _height);
-    }
-
-    private IEnumerator GenerateChunkGrid(List<int> seeds = null)
-    {
-
         _mapChunks.Clear();
 
         Vector3 startOffset = new Vector3(
@@ -124,12 +72,12 @@ public class MapManager : NetworkBehaviour
 
                 if ((seeds == null || seeds.Count <= 0) && IsServer)
                 {
-                    seed = Random.Range(0, int.MaxValue);
+                    seed = UnityEngine.Random.Range(0, int.MaxValue);
                     chunkSeeds.Add(seed);
                 }
                 else
                 {
-                    seed = seeds[y * _height + x];
+                    seed = seeds[y * _width + x];
                 }
 
                 MazeChunk prefab = isCenter ? _chunkSafePrefab : _chunkLabyrinthPrefab;
@@ -170,11 +118,21 @@ public class MapManager : NetworkBehaviour
 
         if (IsServer)
         {
-            foreach (var seed in chunkSeeds)
-                _chunkSeeds.Add(seed);
+            SendChunkSeedsToClientRpc(chunkSeeds.ToArray());
         }
 
-        yield return StartCoroutine(MapGenerated());
+       MapGenerated();
+    }
+
+    [ClientRpc]
+    private void SendChunkSeedsToClientRpc(int[] seeds)
+    {
+        if (IsServer || IsHost) return;
+        
+        Debug.Log($"{(IsClient? "[CLIENT]" : "[SERVER]")} Reçu {seeds.Length} seeds depuis le serveur.");
+
+        StopAllCoroutines();
+        GenerateChunkGrid(new List<int>(seeds));
     }
 
     private void OpenMiddleDoor()
@@ -182,18 +140,15 @@ public class MapManager : NetworkBehaviour
         _safeChunk.TryOpenNeighbordWall();
     }
 
-    private IEnumerator MapGenerated()
+    private void MapGenerated()
     {
         OpenMiddleDoor();
-
-        yield return new WaitForEndOfFrame();
-
         EventBus.Publish(EventType.MapGenerated, true);
     }
 
     private void PlaceItem(Item item)
     {
-        if (!IsHost) return;
+        if (!IsServer) return;
 
 
         List<MazeChunkLabyrinth> chunksWithDeadEnds = new();
@@ -211,9 +166,9 @@ public class MapManager : NetworkBehaviour
             return;
         }
 
-        MazeChunkLabyrinth selectedChunk = chunksWithDeadEnds[Random.Range(0, chunksWithDeadEnds.Count)];
+        MazeChunkLabyrinth selectedChunk = chunksWithDeadEnds[UnityEngine.Random.Range(0, chunksWithDeadEnds.Count)];
         List<MazeCell> deadEnds = selectedChunk.GetDeadEndCells();
-        MazeCell selectedCell = deadEnds[Random.Range(0, deadEnds.Count)];
+        MazeCell selectedCell = deadEnds[UnityEngine.Random.Range(0, deadEnds.Count)];
         selectedChunk._containItem = true;
 
         GameObject newItemObject = Instantiate(item.gameObject, selectedCell.transform.position + Vector3.up * 0.5f, Quaternion.identity);
@@ -255,7 +210,7 @@ public class MapManager : NetworkBehaviour
                 }
                 if (doorCreatedCount == 0)
                 {
-                    int randomY = Random.Range(0, height);
+                    int randomY = UnityEngine.Random.Range(0, height);
                     ConnectChunkOnLeftDirection(labA, labB, randomY, width);
                 }
                 break;
@@ -271,7 +226,7 @@ public class MapManager : NetworkBehaviour
                 }
                 if (doorCreatedCount == 0)
                 {
-                    int randomX = Random.Range(0, width);
+                    int randomX = UnityEngine.Random.Range(0, width);
                     ConnectChunkOnBottomDirection(labA, labB, randomX, width, height);
                 }
                 break;

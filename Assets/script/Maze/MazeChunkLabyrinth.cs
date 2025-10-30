@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 public class MazeChunkLabyrinth : MazeChunk
 {
@@ -14,9 +13,12 @@ public class MazeChunkLabyrinth : MazeChunk
     private int _iteration;
     public bool _containItem;
 
+
+    private System.Random _rng;
+
     public override void CallGenerateMaze()
     {
-        Random.InitState(_seed);
+        _rng = new System.Random(_seed);
 
         GenerateGrid(_cellPrefab.gameObject, _width, _height, _size);
         GenerateMazeFusion();
@@ -67,7 +69,7 @@ public class MazeChunkLabyrinth : MazeChunk
         List<MazeCell> visited = new();
         Stack<MazeCell> stack = new();
 
-        MazeCell start = _chunkCells[Random.Range(0, _chunkCells.Count)];
+        MazeCell start = _chunkCells[_rng.Next(0, _chunkCells.Count)];
         start._visited = true;
         visited.Add(start);
         stack.Push(start);
@@ -107,9 +109,9 @@ public class MazeChunkLabyrinth : MazeChunk
         if (neighbors.Count == 1)
             return neighbors[0];
 
-        float totalWeight = neighbors.Count * 0.5f;
-        float pick = Random.Range(0f, totalWeight);
-        int index = Mathf.FloorToInt(pick / 0.5f);
+        double totalWeight = neighbors.Count * 0.5;
+        double pick = _rng.NextDouble() * totalWeight;
+        int index = (int)Math.Floor(pick / 0.5);
         return neighbors[Mathf.Clamp(index, 0, neighbors.Count - 1)];
     }
 
@@ -142,7 +144,7 @@ public class MazeChunkLabyrinth : MazeChunk
 
         while (destroyed < wallsToDestroy)
         {
-            MazeCell cell = _chunkCells[Random.Range(0, totalCells)];
+            MazeCell cell = _chunkCells[_rng.Next(0, totalCells)];
 
             int index = _chunkCells.IndexOf(cell);
             int x = index % _width;
@@ -151,7 +153,7 @@ public class MazeChunkLabyrinth : MazeChunk
             if (x == 0 || y == 0 || x == _width - 1 || y == _height - 1)
                 continue;
 
-            WallOrientation dir = (WallOrientation)Random.Range(0, 4);
+            WallOrientation dir = (WallOrientation)_rng.Next(0, 4);
             MazeCell neighbor = GetNeighbor(x, y, dir);
 
             if (neighbor == null)
@@ -177,7 +179,7 @@ public class MazeChunkLabyrinth : MazeChunk
     }
     public override void RegenerateMaze()
     {
-        Random.InitState(_seed);
+        _rng = new System.Random(_seed);
 
         foreach (var tiles in _wallDestroyed)
         {

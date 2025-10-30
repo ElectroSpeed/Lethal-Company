@@ -28,7 +28,6 @@ public class SpawnPlayerManager : NetworkBehaviour
 
     private void OnMapGenerated(bool value)
     {
-
         _mapGenerated = value;
 
         if (_mapGenerated && IsServer)
@@ -39,10 +38,9 @@ public class SpawnPlayerManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-
         if (!IsServer) return;
 
-        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+        print(NetworkManager.Singleton.ConnectedClientsIds);
 
         foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
         {
@@ -53,7 +51,6 @@ public class SpawnPlayerManager : NetworkBehaviour
     private void OnClientConnected(ulong clientId)
     {
         StartCoroutine(SpawnPlayerPrefab(clientId));
-        StartCoroutine(_mapManager.WaitForPlayerConnected());
     }
 
     private IEnumerator SpawnPlayerPrefab(ulong clientId)
@@ -61,6 +58,8 @@ public class SpawnPlayerManager : NetworkBehaviour
         yield return new WaitForEndOfFrame();
 
         GameObject player = Instantiate(_playerPrefab, Vector3.zero, Quaternion.identity);
+        player.GetComponent<Rigidbody>().isKinematic = true;
+        player.GetComponent<Rigidbody>().useGravity = false;
 
         var netObj = player.GetComponent<NetworkObject>();
         if (netObj == null)
@@ -72,14 +71,12 @@ public class SpawnPlayerManager : NetworkBehaviour
 
         if (_mapGenerated)
         {
-            MovePlayerToMapPosition(player);
+            MovePlayerToMapPosition(player, clientId);
         }
         else
         {
             player.SetActive(false);
         }
-
-        EventBus.Publish(EventType.AllPlayerWasConnected, true);
     }
 
     private IEnumerator RepositionAllPlayers()
@@ -95,31 +92,31 @@ public class SpawnPlayerManager : NetworkBehaviour
                 continue;
             }
 
-            MovePlayerToMapPosition(playerObj.gameObject);
+            MovePlayerToMapPosition(playerObj.gameObject, playerObj.NetworkObjectId);
+            playerObj.gameObject.GetComponent<Rigidbody>().isKinematic = false;
+            playerObj.gameObject.GetComponent<Rigidbody>().useGravity = true;
             playerObj.gameObject.SetActive(true);
         }
 
     }
 
-    private void MovePlayerToMapPosition(GameObject player)
+    private void MovePlayerToMapPosition(GameObject player, ulong playerIndex)
     {
         if (_mapManager == null || _mapManager._safeChunk == null)
-        {
             return;
-        }
 
         var chunk = _mapManager._safeChunk;
 
+        Transform spawnPointParent = chunk.transform.GetChild(1);
+        int spawnCount = spawnPointParent.childCount;
 
-        float minX = chunk.transform.position.x - chunk._width / 2f;
-        float maxX = chunk.transform.position.x + chunk._width / 2f;
-        float minZ = chunk.transform.position.z - chunk._height / 2f;
-        float maxZ = chunk.transform.position.z + chunk._height / 2f;
+        if (spawnCount == 0)
+            return;
 
-        float randomX = Random.Range(minX, maxX);
-        float randomZ = Random.Range(minZ, maxZ);
-        Vector3 playerPos = new Vector3(randomX, 1.5f, randomZ);
+        Transform spawnPoint = spawnPointParent.GetChild((int)playerIndex % spawnCount);
 
-        player.transform.position = playerPos;
+        player.transform.position = spawnPoint.position;
+        player.transform.rotation = spawnPoint.rotation;
     }
+
 }
