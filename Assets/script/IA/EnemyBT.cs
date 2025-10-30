@@ -1,17 +1,19 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using System.Collections.Generic;
 
 public class EnemyBT : MonoBehaviour
 {
     public Transform _player;
     public float _detectionRange = 15f;
-    public float _wanderRadius = 20f;
-    public float _wanderInterval = 3f;
+    public float _wanderRadius = 2000f;
+    public float _wanderInterval = 10f;
 
     private NavMeshAgent _agent;
     private Node _rootNode;
     private float _wanderTimer;
+
+    public Vector2 _targetPos;
 
     void Start()
     {
@@ -34,6 +36,8 @@ public class EnemyBT : MonoBehaviour
 
     private bool PlayerVisible()
     {
+        if (_player == null) return false;
+
         return Vector3.Distance(transform.position, _player.position) < _detectionRange;
     }
 
@@ -52,14 +56,19 @@ public class EnemyBT : MonoBehaviour
 
         if (_wanderTimer >= _wanderInterval || _agent.remainingDistance < 0.5f)
         {
-            Vector3 newPos = RandomNavmeshLocation(_wanderRadius);
-            _agent.SetDestination(newPos);
+            if (_targetPos == Vector2.zero)
+            {
+                _targetPos = RandomNavmeshLocation(_wanderRadius);
+
+            }
+            _agent.SetDestination(_targetPos);
+            _targetPos = Vector2.zero;
             _wanderTimer = 0f;
         }
 
         return NodeState.Running;
     }
-    
+
     private Vector3 RandomNavmeshLocation(float radius)
     {
         Vector3 randomDirection = Random.insideUnitSphere * radius;
@@ -67,7 +76,7 @@ public class EnemyBT : MonoBehaviour
 
         if (NavMesh.SamplePosition(randomDirection, out NavMeshHit hit, radius, NavMesh.AllAreas))
         {
-            return hit.position;
+            return Vector3Int.FloorToInt(hit.position);
         }
 
         return transform.position;

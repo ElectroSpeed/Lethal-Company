@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Unity.Netcode;
+using Unity.AI.Navigation;
 using UnityEngine;
 
 public class MazeChunkLabyrinth : MazeChunk
@@ -13,10 +13,26 @@ public class MazeChunkLabyrinth : MazeChunk
     private int _iteration;
     public bool _containItem;
 
+    public NavMeshSurface _navMeshSurface;
+    public List<NavMeshLink> _navChunkConnection = new();
+
     public override void CallGenerateMaze()
     {
         GenerateGrid(_cellPrefab.gameObject, _width, _height, _size);
         GenerateMazeFusion();
+    }
+
+    public void BakeNashMeshSurface()
+    {
+        if (_navMeshSurface == null)
+        {
+            if (gameObject.TryGetComponent(out NavMeshSurface surface))
+            {
+                _navMeshSurface = surface;
+            }
+            _navMeshSurface = gameObject.AddComponent<NavMeshSurface>();
+        }
+        _navMeshSurface.BuildNavMesh();
     }
 
     private void GenerateGrid(GameObject cellPrefab, int width, int height, int cellSize)

@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.AI.Navigation;
 using Unity.Netcode;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 public class MapManager : NetworkBehaviour
 {
@@ -17,8 +17,13 @@ public class MapManager : NetworkBehaviour
     private readonly List<MazeChunk> _mapChunks = new();
     public MazeChunkSafeZone _safeChunk;
 
+    [Header("Spawn Item")]
     [SerializeField, Min(1)] private int _itemCountOnMap;
     [SerializeField, Min(1)] private Item _itemOnMap;
+
+    [Header("Spawn Enemy")]
+    [SerializeField] private GameObject _enemyPrefab;
+    [SerializeField] private int _maxEnemyToSpawn;
 
     private void OnValidate()
     {
@@ -46,6 +51,7 @@ public class MapManager : NetworkBehaviour
         {
             PlaceItem(_itemOnMap);
         }
+        SpawnEnemyOnMap(_enemyPrefab, 1);
     }
 
 
@@ -82,12 +88,17 @@ public class MapManager : NetworkBehaviour
 
                 MazeChunk prefab = isCenter ? _chunkSafePrefab : _chunkLabyrinthPrefab;
                 MazeChunk newChunk = Instantiate(prefab, pos, Quaternion.identity, transform);
+                newChunk.transform.name = $"Chunk ({x}, {y})";
                 newChunk.Initialize(seed);
                 _mapChunks.Add(newChunk);
 
                 if (isCenter)
                 {
                     _safeChunk = newChunk.GetComponent<MazeChunkSafeZone>();
+                }
+                else
+                {
+                    newChunk.GetComponent<MazeChunkLabyrinth>().BakeNashMeshSurface();
                 }
 
                 // Connexions horizontales
@@ -98,8 +109,10 @@ public class MapManager : NetworkBehaviour
 
                     newChunk._neighbordsChunks.Add(leftChunk);
                     leftChunk._neighbordsChunks.Add(newChunk);
-
-                    StartCoroutine(ConnectAdjacentChunks(newChunk, leftChunk, WallOrientation.Left));
+                    if (newChunk.TryGetComponent(out MazeChunkLabyrinth labA) && leftChunk.TryGetComponent(out MazeChunkLabyrinth labB))
+                    {
+                        StartCoroutine(ConnectAdjacentChunks(labA, labB, WallOrientation.Left));
+                    }
                 }
 
                 // Connexions verticales
@@ -110,8 +123,10 @@ public class MapManager : NetworkBehaviour
 
                     newChunk._neighbordsChunks.Add(downChunk);
                     downChunk._neighbordsChunks.Add(newChunk);
-
-                    StartCoroutine(ConnectAdjacentChunks(newChunk, downChunk, WallOrientation.Down));
+                    if (newChunk.TryGetComponent(out MazeChunkLabyrinth labA) && downChunk.TryGetComponent(out MazeChunkLabyrinth labB))
+                    {
+                        StartCoroutine(ConnectAdjacentChunks(labA, labB, WallOrientation.Down));
+                    }
                 }
             }
         }
@@ -138,6 +153,34 @@ public class MapManager : NetworkBehaviour
         StopAllCoroutines();
         GenerateChunkGrid(new List<int>(seeds));
     }
+
+    private void SpawnEnemyOnMap(GameObject enemyPrefab, int nbsMaxTypeMob)
+    {
+        nbsMaxTypeMob = Mathf.Clamp(nbsMaxTypeMob, 0, 4);
+
+        MazeChunk[] chunkSpawner = new MazeChunk[4];
+        chunkSpawner[0] = _mapChunks[0];
+        chunkSpawner[1] = _mapChunks[_width - 1];
+        chunkSpawner[2] = _mapChunks[(_height - 1) * _width];
+        chunkSpawner[3] = _mapChunks[(_width * _height) - 1];
+
+        List<MazeChunk> availableChunks = new List<MazeChunk>(chunkSpawner);
+
+        for (int i = 0; i < nbsMaxTypeMob; i++)
+        {
+            if (availableChunks.Count == 0)
+                break;
+
+            int randIndex = UnityEngine.Random.Range(0, availableChunks.Count);
+            MazeChunkLabyrinth chosenChunk = availableChunks[randIndex].GetComponent<MazeChunkLabyrinth>();
+
+            availableChunks.RemoveAt(randIndex);
+            Vector3 spawnPos = chosenChunk._chunkCells[UnityEngine.Random.Range(0, chosenChunk._chunkCells.Count - 1)].transform.position;
+            GameObject newEnemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        }
+    }
+
+
     private void PlaceItem(Item item)
     {
         if (!IsServer) return;
@@ -183,7 +226,7 @@ public class MapManager : NetworkBehaviour
 
     #region Connect Chunk 
 
-    private IEnumerator ConnectAdjacentChunks(MazeChunk labA, MazeChunk labB, WallOrientation direction)
+    private IEnumerator ConnectAdjacentChunks(MazeChunkLabyrinth labA, MazeChunkLabyrinth labB, WallOrientation direction)
     {
         if (labA is not MazeChunkLabyrinth && labB is not MazeChunkLabyrinth)
             yield break;
@@ -228,33 +271,64 @@ public class MapManager : NetworkBehaviour
                 }
                 break;
         }
-
     }
-    private void ConnectChunkOnLeftDirection(MazeChunk labA, MazeChunk labB, int y, int width)
+    private void ConnectChunkOnLeftDirection(MazeChunkLabyrinth labA, MazeChunkLabyrinth labB, int y, int width)
     {
         if (labA._chunkCells.Count <= 0 || labB._chunkCells.Count <= 0) return;
 
         MazeCell leftCellA = labA._chunkCells[y * width + 0];
         MazeCell rightCellB = labB._chunkCells[y * width + (width - 1)];
 
-        leftCellA.DestroyWall(WallOrientation.Left, true, (MazeChunkLabyrinth)labA);
-        rightCellB.DestroyWall(WallOrientation.Right, true, (MazeChunkLabyrinth)labB);
+        leftCellA.DestroyWall(WallOrientation.Left, true, labA);
+        rightCellB.DestroyWall(WallOrientation.Right, true, labB);
 
         labA.AddDoorPair(leftCellA, rightCellB, WallOrientation.Left);
         labB.AddDoorPair(rightCellB, leftCellA, WallOrientation.Right);
+
+        ConnectNavMesh(leftCellA, rightCellB);
+        ConnectNavMesh(rightCellB, leftCellA);
+
+
     }
-    private void ConnectChunkOnBottomDirection(MazeChunk labA, MazeChunk labB, int x, int width, int height)
+    private void ConnectChunkOnBottomDirection(MazeChunkLabyrinth labA, MazeChunkLabyrinth labB, int x, int width, int height)
     {
         if (labA._chunkCells.Count <= 0 || labB._chunkCells.Count <= 0) return;
 
         MazeCell bottomCellA = labA._chunkCells[0 * width + x];
         MazeCell topCellB = labB._chunkCells[(height - 1) * width + x];
 
-        bottomCellA.DestroyWall(WallOrientation.Down, true, (MazeChunkLabyrinth)labA);
-        topCellB.DestroyWall(WallOrientation.Up, true, (MazeChunkLabyrinth)labB);
+        bottomCellA.DestroyWall(WallOrientation.Down, true, labA);
+        topCellB.DestroyWall(WallOrientation.Up, true, labB);
 
         labA.AddDoorPair(bottomCellA, topCellB, WallOrientation.Down);
         labB.AddDoorPair(topCellB, bottomCellA, WallOrientation.Up);
+
+
+        ConnectNavMesh(bottomCellA, topCellB);
+        ConnectNavMesh(topCellB, bottomCellA);
+    }
+
+    private void ConnectNavMeshChunkByDoor()
+    {
+        foreach (MazeChunk chunk in _mapChunks)
+        {
+            foreach (CellPair door in chunk._doorPairs)
+            {
+                ConnectNavMesh(door.localCell, door.neighborCell);
+                ConnectNavMesh(door.neighborCell, door.localCell);
+            }
+        }
+    }
+
+    private void ConnectNavMesh(MazeCell a, MazeCell b)
+    {
+        NavMeshLink link = a.gameObject.AddComponent<NavMeshLink>();
+
+        link.startTransform = a.transform;
+        link.endTransform = b.transform;
+
+        link.width = 4;
+        link.autoUpdate = true;
     }
     #endregion
 }
