@@ -13,13 +13,8 @@ public class MazeChunkLabyrinth : MazeChunk
     private int _iteration;
     public bool _containItem;
 
-
-    private System.Random _rng;
-
     public override void CallGenerateMaze()
     {
-        _rng = new System.Random(_seed);
-
         GenerateGrid(_cellPrefab.gameObject, _width, _height, _size);
         GenerateMazeFusion();
     }

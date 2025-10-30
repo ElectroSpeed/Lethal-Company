@@ -199,7 +199,7 @@ public class MapManager : NetworkBehaviour
             case WallOrientation.Left:
                 for (int y = 0; y < height; y++)
                 {
-                    if (Random.value <= _connectionChance)
+                    if (labA._rng.NextDouble() <= _connectionChance)
                     {
                         ConnectChunkOnLeftDirection(labA, labB, y, width);
                         doorCreatedCount++;
@@ -207,7 +207,7 @@ public class MapManager : NetworkBehaviour
                 }
                 if (doorCreatedCount == 0)
                 {
-                    int randomY = UnityEngine.Random.Range(0, height);
+                    int randomY = labA._rng.Next(0, height);
                     ConnectChunkOnLeftDirection(labA, labB, randomY, width);
                 }
                 break;
@@ -215,7 +215,7 @@ public class MapManager : NetworkBehaviour
             case WallOrientation.Down:
                 for (int x = 0; x < width; x++)
                 {
-                    if (Random.value <= _connectionChance)
+                    if (labA._rng.NextDouble() <= _connectionChance)
                     {
                         ConnectChunkOnBottomDirection(labA, labB, x, width, height);
                         doorCreatedCount++;
@@ -223,7 +223,7 @@ public class MapManager : NetworkBehaviour
                 }
                 if (doorCreatedCount == 0)
                 {
-                    int randomX = UnityEngine.Random.Range(0, width);
+                    int randomX = labA._rng.Next(0, width);
                     ConnectChunkOnBottomDirection(labA, labB, randomX, width, height);
                 }
                 break;

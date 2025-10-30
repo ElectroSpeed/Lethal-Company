@@ -10,6 +10,7 @@ public abstract class MazeChunk : MonoBehaviour
     [Min(1)] public int _size = 5;
 
     public int _seed;
+    public System.Random _rng;
 
     [HideInInspector] public readonly List<MazeCell> _chunkCells = new();
     /*[HideInInspector]*/ public List<MazeChunk> _neighbordsChunks = new();
@@ -28,6 +29,7 @@ public abstract class MazeChunk : MonoBehaviour
     public void Initialize(int seed)
     {
         _seed = seed;
+        _rng = new System.Random(_seed);
         CallGenerateMaze();
     }
     public void AddDoorPair(MazeCell localCell, MazeCell neighborCell, WallOrientation orientation)
