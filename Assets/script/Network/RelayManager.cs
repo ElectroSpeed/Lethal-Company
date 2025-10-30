@@ -24,10 +24,7 @@ public class RelayManager : MonoBehaviour
     private async void Start()
     {
         await UnityServices.InitializeAsync();
-
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
-
-
     }
 
     public async void StartRelay()
@@ -64,8 +61,6 @@ public class RelayManager : MonoBehaviour
 
         NetworkManager.Singleton.Shutdown(); 
     }
-
-
 
     public async void JoinRelay()
     {

@@ -48,9 +48,11 @@ MonoBehaviour:
   _width: 5
   _height: 5
   _size: 5
+  _seed: 0
   _neighbordsChunks: []
   _isGenerated: 0
   _doorPairs: []
   _percentWallDestroyed: 0.15
   _fusionWaitingSecond: 0.25
   _wallDestroyed: []
+  _containItem: 0
