@@ -7,7 +7,7 @@ public abstract class MazeChunk : MonoBehaviour
     [SerializeField] protected MazeCell _cellPrefab;
     [Min(1)] public int _width = 10;
     [Min(1)] public int _height = 10;
-    [Min(1)] public int _size = 5;
+    [Min(1)] public int _cellSize = 5;
 
     public int _seed;
     public System.Random _rng;
