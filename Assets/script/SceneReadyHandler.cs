@@ -10,10 +10,16 @@ public class SceneReadyHandler : NetworkBehaviour
     {
         if (!IsServer) return;
 
+        if (NetworkManager.Singleton.ConnectedClients.Count <= 1) //lance si l'host est le seul client puis return sans s'abonner a une autre connection
+        {
+            _mapManager.StartMapGeneration();
+            return;
+        }
+
         if (NetworkManager.Singleton.SceneManager != null)
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoadCompleted;
-    }
 
+    }
     public override void OnNetworkDespawn()
     {
         if (!IsServer) return;

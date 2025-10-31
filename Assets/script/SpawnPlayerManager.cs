@@ -6,6 +6,7 @@ public class SpawnPlayerManager : NetworkBehaviour
 {
     [SerializeField] private GameObject _playerPrefab;
     [SerializeField] private MapManager _mapManager;
+    [SerializeField] private GameLoop _gameLoop;
 
     private bool _mapGenerated;
 
@@ -28,25 +29,14 @@ public class SpawnPlayerManager : NetworkBehaviour
 
     private void OnMapGenerated(bool value)
     {
-        _mapGenerated = value;
-
-        if (_mapGenerated && IsServer)
-        {
-            StartCoroutine(RepositionAllPlayers());
-        }
-    }
-
-    public override void OnNetworkSpawn()
-    {
         if (!IsServer) return;
-
-        print(NetworkManager.Singleton.ConnectedClientsIds);
 
         foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
         {
             OnClientConnected(clientId);
         }
     }
+
 
     private void OnClientConnected(ulong clientId)
     {
@@ -57,53 +47,25 @@ public class SpawnPlayerManager : NetworkBehaviour
     {
         yield return new WaitForEndOfFrame();
 
+
         GameObject player = Instantiate(_playerPrefab, Vector3.zero, Quaternion.identity);
-        player.GetComponent<Rigidbody>().isKinematic = true;
-        player.GetComponent<Rigidbody>().useGravity = false;
+        Vector3 spawnPos = GetSpawnPointWithPlayerID(player, clientId);
+        player.GetComponent<Rigidbody>().position = spawnPos;
+
+        _gameLoop._players.Add(player.GetComponent<Player>());
 
         var netObj = player.GetComponent<NetworkObject>();
         if (netObj == null)
         {
             netObj = player.AddComponent<NetworkObject>();
         }
-
         netObj.SpawnAsPlayerObject(clientId);
-
-        if (_mapGenerated)
-        {
-            MovePlayerToMapPosition(player, clientId);
-        }
-        else
-        {
-            player.SetActive(false);
-        }
     }
 
-    private IEnumerator RepositionAllPlayers()
-    {
-        yield return new WaitForSeconds(0.5f);
-
-        foreach (var kvp in NetworkManager.Singleton.ConnectedClients)
-        {
-            var playerObj = kvp.Value.PlayerObject;
-
-            if (playerObj == null)
-            {
-                continue;
-            }
-
-            MovePlayerToMapPosition(playerObj.gameObject, playerObj.NetworkObjectId);
-            playerObj.gameObject.GetComponent<Rigidbody>().isKinematic = false;
-            playerObj.gameObject.GetComponent<Rigidbody>().useGravity = true;
-            playerObj.gameObject.SetActive(true);
-        }
-
-    }
-
-    private void MovePlayerToMapPosition(GameObject player, ulong playerIndex)
+    private Vector3 GetSpawnPointWithPlayerID(GameObject player, ulong playerIndex)
     {
         if (_mapManager == null || _mapManager._safeChunk == null)
-            return;
+            return Vector3.zero;
 
         var chunk = _mapManager._safeChunk;
 
@@ -111,12 +73,10 @@ public class SpawnPlayerManager : NetworkBehaviour
         int spawnCount = spawnPointParent.childCount;
 
         if (spawnCount == 0)
-            return;
+            return Vector3.zero;
 
         Transform spawnPoint = spawnPointParent.GetChild((int)playerIndex % spawnCount);
-
-        player.transform.position = spawnPoint.position;
-        player.transform.rotation = spawnPoint.rotation;
+        return spawnPoint.position;
     }
 
 }

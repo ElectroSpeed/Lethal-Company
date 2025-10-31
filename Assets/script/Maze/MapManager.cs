@@ -17,7 +17,7 @@ public class MapManager : NetworkBehaviour
     private readonly List<MazeChunk> _mapChunks = new();
     public MazeChunkSafeZone _safeChunk;
 
-    [SerializeField, Min(1)] private int _itemCountOnMap;
+    [Min(1)] public int _itemCountOnMap;
     [SerializeField, Min(1)] private Item _itemOnMap;
 
     private void OnValidate()
@@ -121,31 +121,23 @@ public class MapManager : NetworkBehaviour
             SendChunkSeedsToClientRpc(chunkSeeds.ToArray());
         }
 
-       MapGenerated();
+
+        _safeChunk.TryOpenNeighbordWall();
+
+
+        EventBus.Publish(EventType.MapGenerated, true);
     }
+
+
 
     [ClientRpc]
     private void SendChunkSeedsToClientRpc(int[] seeds)
     {
         if (IsServer || IsHost) return;
-        
-        Debug.Log($"{(IsClient? "[CLIENT]" : "[SERVER]")} Reçu {seeds.Length} seeds depuis le serveur.");
 
         StopAllCoroutines();
         GenerateChunkGrid(new List<int>(seeds));
     }
-
-    private void OpenMiddleDoor()
-    {
-        _safeChunk.TryOpenNeighbordWall();
-    }
-
-    private void MapGenerated()
-    {
-        OpenMiddleDoor();
-        EventBus.Publish(EventType.MapGenerated, true);
-    }
-
     private void PlaceItem(Item item)
     {
         if (!IsServer) return;
@@ -185,6 +177,11 @@ public class MapManager : NetworkBehaviour
             }
         }
     }
+
+
+
+
+    #region Connect Chunk 
 
     private IEnumerator ConnectAdjacentChunks(MazeChunk labA, MazeChunk labB, WallOrientation direction)
     {
@@ -233,7 +230,6 @@ public class MapManager : NetworkBehaviour
         }
 
     }
-
     private void ConnectChunkOnLeftDirection(MazeChunk labA, MazeChunk labB, int y, int width)
     {
         if (labA._chunkCells.Count <= 0 || labB._chunkCells.Count <= 0) return;
@@ -247,7 +243,6 @@ public class MapManager : NetworkBehaviour
         labA.AddDoorPair(leftCellA, rightCellB, WallOrientation.Left);
         labB.AddDoorPair(rightCellB, leftCellA, WallOrientation.Right);
     }
-
     private void ConnectChunkOnBottomDirection(MazeChunk labA, MazeChunk labB, int x, int width, int height)
     {
         if (labA._chunkCells.Count <= 0 || labB._chunkCells.Count <= 0) return;
@@ -261,4 +256,6 @@ public class MapManager : NetworkBehaviour
         labA.AddDoorPair(bottomCellA, topCellB, WallOrientation.Down);
         labB.AddDoorPair(topCellB, bottomCellA, WallOrientation.Up);
     }
+    #endregion
 }
+
