@@ -23,6 +23,13 @@ public class RelayManager : MonoBehaviour
 
     private async void Start()
     {
+        
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            Debug.Log("Arrêt du NetworkManager (retour menu)");
+            NetworkManager.Singleton.Shutdown();
+        }
+        
         await UnityServices.InitializeAsync();
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
     }
