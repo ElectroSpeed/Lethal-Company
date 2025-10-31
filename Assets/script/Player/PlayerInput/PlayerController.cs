@@ -18,10 +18,16 @@ public class PlayerController : NetworkBehaviour
     private float _baseMoveSpeed;
     private float _currentSpeed;
 
+    [Header("Interaction Data")]
+    [SerializeField] private float _interactionRange;
+    [SerializeField] private LayerMask _interactibleMask;
+    private IInteractible _currentInteractible;
+
     [Header("Component References")]
     [SerializeField] private Transform _cameraTransform;
     private Rigidbody _rb;
     private PlayerInput _playerInput;
+    private Player _player;
 
     [Header("Input State")]
     private Vector2 _moveInput;
@@ -43,11 +49,11 @@ public class PlayerController : NetworkBehaviour
         }
 
         _playerInput = GetComponent<PlayerInput>();
+        _player = GetComponent<Player>();
 
         _baseMoveSpeed = _moveSpeed;
         _currentSpeed = _moveSpeed;
 
-        // Désactiver les entrées et la caméra pour les joueurs distants
         if (!IsOwner)
         {
             if (_cameraTransform != null)
@@ -59,7 +65,6 @@ public class PlayerController : NetworkBehaviour
             return;
         }
 
-        // Initialisation pour le joueur local uniquement
         if (_cameraTransform != null)
         {
             _cameraTransform.gameObject.SetActive(true);
@@ -68,8 +73,6 @@ public class PlayerController : NetworkBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-
-        Debug.Log($"Spawned player {OwnerClientId}, IsOwner={IsOwner}");
     }
 
     private void FixedUpdate()
@@ -152,16 +155,65 @@ public class PlayerController : NetworkBehaviour
             _isSprinting = false;
     }
 
+
     public void OnInteract(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
-        // Exemple : _playerComponent.GetNearestInteractibleObject()?.Interact();
+        if (!context.started) return;
+        if (_currentInteractible == null) return;
+
+        NetworkObject netObj = ((MonoBehaviour)_currentInteractible).GetComponent<NetworkObject>();
+        if (netObj != null)
+        {
+            InteractServerRpc(netObj);
+        }
     }
 
+    [ServerRpc]
+    private void InteractServerRpc(NetworkObjectReference interactibleRef)
+    {
+        if (interactibleRef.TryGet(out NetworkObject netObj))
+        {
+            if (netObj.TryGetComponent(out IInteractible interactible))
+            {
+                interactible.Interact(_player);
+            }
+        }
+    }
     public void OnUseItem(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
-        // Exemple : _playerComponent.GetEquippedItem()?.Use();
+        if (context.started)
+        {
+            if (_player._equipiedItem is ConsumableItem consumableItem)
+            {
+                consumableItem.Use();
+            }
+        }
     }
+    #endregion
+
+
+    #region Trigger Detection
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!IsOwner) return;
+        if (other.TryGetComponent(out IInteractible interactible))
+        {
+            _currentInteractible = interactible;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (!IsOwner) return;
+        if (other.TryGetComponent(out IInteractible interactible))
+        {
+            if (_currentInteractible == interactible)
+                _currentInteractible = null;
+        }
+    }
+
     #endregion
 }

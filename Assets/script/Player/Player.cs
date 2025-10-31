@@ -5,7 +5,9 @@ using UnityEngine;
 public class Player : NetworkBehaviour
 {
     [HideInInspector] public PlayerBaseStatsComponent _playerStats = null;
+    public Item _equipiedItem;
 
+    #region Network Data
     public void PlayerSpawned()
     {
     }
@@ -19,5 +21,20 @@ public class Player : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
+    }
+
+    #endregion
+
+    public void Drop()
+    {
+        _equipiedItem = null;
+        //make drop item logique like just throw on floor
+    }
+
+    public void PickupItem(Item item)
+    {
+        if(_equipiedItem != null) Drop();
+
+        _equipiedItem = item;
     }
 }
