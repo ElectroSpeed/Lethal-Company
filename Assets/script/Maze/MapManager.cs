@@ -17,7 +17,7 @@ public class MapManager : NetworkBehaviour
     private readonly List<MazeChunk> _mapChunks = new();
     public MazeChunkSafeZone _safeChunk;
 
-    [SerializeField, Min(1)] private int _itemCountOnMap;
+    [Min(1)] public int _itemCountOnMap;
     [SerializeField, Min(1)] private Item _itemOnMap;
 
     private void OnValidate()
