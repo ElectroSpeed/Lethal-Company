@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1864486071931959915}
   - component: {fileID: 728904432561597742}
   - component: {fileID: 1086414465646248900}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -148,7 +148,7 @@ GameObject:
   - component: {fileID: 6318781116219749733}
   - component: {fileID: 390649059389384967}
   - component: {fileID: 2436669100583064225}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Capsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -239,7 +239,7 @@ GameObject:
   - component: {fileID: 1755276550039319323}
   - component: {fileID: 205455307306675662}
   - component: {fileID: -288063807263012650}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: PlayerPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -596,7 +596,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1278179080751834368}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: PlayerHead
   m_TagString: Untagged
   m_Icon: {fileID: 0}

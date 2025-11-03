@@ -47,7 +47,7 @@ MonoBehaviour:
   _cellPrefab: {fileID: 6095167762416087811, guid: ff42ad5f4099510428db105583dd4c76, type: 3}
   _width: 5
   _height: 5
-  _size: 5
+  _cellSize: 5
   _seed: 0
   _neighbordsChunks: []
   _isGenerated: 0
@@ -56,3 +56,4 @@ MonoBehaviour:
   _fusionWaitingSecond: 0.25
   _wallDestroyed: []
   _containItem: 0
+  _navMeshSurface: {fileID: 0}

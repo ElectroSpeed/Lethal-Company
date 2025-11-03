@@ -4,4 +4,5 @@ public enum EventType
     PickFlower,
     MapGenerated,
     AllPlayerWasConnected,
+    FillEnemyPath,
 }
