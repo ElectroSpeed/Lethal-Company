@@ -13,17 +13,14 @@ public class EnemyBT : MonoBehaviour
     private NavMeshAgent _agent;
     private Node _rootNode;
     private float _wanderTimer;
-
     private bool _isCrossingLink = false;
 
-
-    [Header("Enemy path")]
     [SerializeField] private List<Vector3> _enemyPath = new();
     private bool _newPosChoosed;
 
-    [Header("Players ref")]
     private List<Player> _players = new();
     [SerializeField] private LayerMask _visionMask;
+    private bool _navReady;
 
     public void SetEnemyPathOnMap(List<MazeCell> cells)
     {
@@ -34,25 +31,31 @@ public class EnemyBT : MonoBehaviour
         }
     }
 
-
     void Start()
     {
         _agent = GetComponent<NavMeshAgent>();
-
         Node playerVisible = new ConditionNode(() => PlayerVisible());
         Node chase = new ActionNode(() => ChasePlayer());
         Node wander = new ActionNode(() => Wander());
-
         Sequence chaseSequence = new Sequence(new List<Node> { playerVisible, chase });
         _rootNode = new Selector(new List<Node> { chaseSequence, wander });
-
         _wanderTimer = _wanderInterval;
         GetComponent<SphereCollider>().radius = _detectionRange;
+        StartCoroutine(CheckNavMeshReady());
+    }
 
+    IEnumerator CheckNavMeshReady()
+    {
+        while (!_agent.isOnNavMesh)
+        {
+            yield return null;
+        }
+        _navReady = true;
     }
 
     void Update()
     {
+        if (!_navReady) return;
         _rootNode.Evaluate();
     }
 
@@ -60,39 +63,25 @@ public class EnemyBT : MonoBehaviour
     {
         _playerTarget = null;
         float closestDistance = Mathf.Infinity;
-        print("Call CheckIfPlayerIsTargetable");
 
         foreach (Player player in _players)
         {
-            print($"try to hit raycast for {_players.Count}");
             if (player == null) continue;
-
             Vector3 dirToPlayer = (player.transform.position - transform.position).normalized;
             float distToPlayer = Vector3.Distance(transform.position, player.transform.position);
-
-            if (distToPlayer > _detectionRange)
-            {
-                print($"player was to far");
-                continue;
-            }
-
-            print($"try to hit raycast on {player.name}");
+            if (distToPlayer > _detectionRange) continue;
             if (Physics.Raycast(transform.position + Vector3.up * 0.5f, dirToPlayer, out RaycastHit hit, _detectionRange, _visionMask))
             {
-                print($"raycast Hit {hit.collider.name}");
                 if (hit.collider.TryGetComponent(out Player hitPlayer) && hitPlayer == player)
                 {
-                    print($"raycast Hit player, check if is on range");
                     if (distToPlayer < closestDistance)
                     {
-                        print($"player is on range, take reference");
                         closestDistance = distToPlayer;
                         _playerTarget = player.transform;
                         return true;
                     }
                 }
             }
-            return false;
         }
         return false;
     }
@@ -104,14 +93,12 @@ public class EnemyBT : MonoBehaviour
 
     private NodeState ChasePlayer()
     {
-        //Make sure the enemy follows you thanks to the “marks” left by the player's sprint. 
-        if (_playerTarget == null)
+        if (_playerTarget == null || !_agent.isOnNavMesh)
             return NodeState.Failure;
 
-        _agent.destination = _playerTarget.position;
+        _agent.SetDestination(_playerTarget.position);
         return NodeState.Running;
     }
-
 
     private void OnTriggerEnter(Collider other)
     {
@@ -137,6 +124,9 @@ public class EnemyBT : MonoBehaviour
 
     private NodeState Wander()
     {
+        if (!_agent.isOnNavMesh)
+            return NodeState.Failure;
+
         _wanderTimer += Time.deltaTime;
 
         if ((_wanderTimer >= _wanderInterval || !_agent.hasPath || _agent.remainingDistance < 0.5f) && !_newPosChoosed)
@@ -158,7 +148,6 @@ public class EnemyBT : MonoBehaviour
         return NodeState.Running;
     }
 
-
     private Vector3 RandomNavmeshLocation()
     {
         if (_enemyPath.Count <= 0)
@@ -167,12 +156,9 @@ public class EnemyBT : MonoBehaviour
             return transform.position;
         }
 
-
         int randomIndex = Random.Range(0, _enemyPath.Count);
         Vector3 randPos = _enemyPath[randomIndex];
-
         _enemyPath.Remove(randPos);
-
         _newPosChoosed = true;
         return randPos;
     }
