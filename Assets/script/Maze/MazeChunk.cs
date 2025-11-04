@@ -7,18 +7,20 @@ public abstract class MazeChunk : MonoBehaviour
     [SerializeField] protected MazeCell _cellPrefab;
     [Min(1)] public int _width = 10;
     [Min(1)] public int _height = 10;
-    [Min(1)] public int _size = 5;
+    [Min(1)] public int _cellSize = 5;
 
     public int _seed;
     public System.Random _rng;
 
+
     [HideInInspector] public readonly List<MazeCell> _chunkCells = new();
-    /*[HideInInspector]*/ public List<MazeChunk> _neighbordsChunks = new();
+    /*[HideInInspector]*/
+    public List<MazeChunk> _neighbordsChunks = new();
     public bool _isGenerated;
 
     public List<CellPair> _doorPairs = new();
     public abstract void CallGenerateMaze();
-    public abstract void RegenerateMaze();  
+    public abstract void RegenerateMaze();
 
     private void OnValidate()
     {
@@ -32,6 +34,7 @@ public abstract class MazeChunk : MonoBehaviour
         _rng = new System.Random(_seed);
         CallGenerateMaze();
     }
+
     public void AddDoorPair(MazeCell localCell, MazeCell neighborCell, WallOrientation orientation)
     {
         _doorPairs.Add(new CellPair
