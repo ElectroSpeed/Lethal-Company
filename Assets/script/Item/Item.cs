@@ -10,7 +10,7 @@ public class Item : NetworkBehaviour, IInteractible
 
     [Header("Detection Area")]
     [SerializeField, Range(min: 1, max: 10)] private float _detectionArea = 2f;
-    private SphereCollider _collider;
+    public SphereCollider _collider;
 
     public override void OnNetworkSpawn()
     {
