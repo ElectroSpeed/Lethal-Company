@@ -16,6 +16,19 @@ public class EnemyBT : MonoBehaviour
 
     private bool _isCrossingLink = false;
 
+    private Vector3 _lastKnownPlayerPos;
+    private float _searchTimer;
+    private bool _isSearching;
+    [SerializeField] private float _searchDurationMin = 10f;
+    [SerializeField] private float _searchDurationMax = 30f;
+    private float _currentSearchDuration;
+
+    public MapManager _mapManager { private get; set; }
+
+    private List<Vector3> _searchPoints = new();
+    private int _currentSearchIndex = 0;
+
+
 
     [Header("Enemy path")]
     [SerializeField] private List<Vector3> _enemyPath = new();
@@ -34,6 +47,11 @@ public class EnemyBT : MonoBehaviour
         }
     }
 
+    public void Initialize(MapManager manager)
+    {
+        _mapManager = manager;
+        SetEnemyPathOnMap(_mapManager.GetRandomCellsOnMap());
+    }
 
     void Start()
     {
@@ -41,61 +59,136 @@ public class EnemyBT : MonoBehaviour
 
         Node playerVisible = new ConditionNode(() => PlayerVisible());
         Node chase = new ActionNode(() => ChasePlayer());
+
+        Node hasLastKnown = new ConditionNode(() => HasLastKnownPosition());
+        Node search = new ActionNode(() => SearchLastKnownPosition());
+
         Node wander = new ActionNode(() => Wander());
 
         Sequence chaseSequence = new Sequence(new List<Node> { playerVisible, chase });
-        _rootNode = new Selector(new List<Node> { chaseSequence, wander });
+        Sequence searchSequence = new Sequence(new List<Node> { hasLastKnown, search });
+
+        _rootNode = new Selector(new List<Node> { chaseSequence, searchSequence, wander });
 
         _wanderTimer = _wanderInterval;
         GetComponent<SphereCollider>().radius = _detectionRange;
-
     }
+
 
     void Update()
     {
         _rootNode.Evaluate();
     }
 
+
+
+    #region 
+
     private bool CheckIfPlayerIsTargetable()
     {
         _playerTarget = null;
-        float closestDistance = Mathf.Infinity;
-        print("Call CheckIfPlayerIsTargetable");
 
         foreach (Player player in _players)
         {
-            print($"try to hit raycast for {_players.Count}");
             if (player == null) continue;
 
             Vector3 dirToPlayer = (player.transform.position - transform.position).normalized;
             float distToPlayer = Vector3.Distance(transform.position, player.transform.position);
 
             if (distToPlayer > _detectionRange)
-            {
-                print($"player was to far");
                 continue;
-            }
 
-            print($"try to hit raycast on {player.name}");
             if (Physics.Raycast(transform.position + Vector3.up * 0.5f, dirToPlayer, out RaycastHit hit, _detectionRange, _visionMask))
             {
-                print($"raycast Hit {hit.collider.name}");
                 if (hit.collider.TryGetComponent(out Player hitPlayer) && hitPlayer == player)
                 {
-                    print($"raycast Hit player, check if is on range");
-                    if (distToPlayer < closestDistance)
-                    {
-                        print($"player is on range, take reference");
-                        closestDistance = distToPlayer;
-                        _playerTarget = player.transform;
-                        return true;
-                    }
+                    _lastKnownPlayerPos = player.transform.position;
+                    _isSearching = false;
+                    _searchTimer = 0f;
+                    _playerTarget = player.transform;
+                    return true;
                 }
             }
-            return false;
         }
+
+        if (_lastKnownPlayerPos != Vector3.zero && !_isSearching)
+        {
+            InitializeSearchInChunk(_lastKnownPlayerPos);
+        }
+
         return false;
     }
+
+
+    private NodeState SearchLastKnownPosition()
+    {
+        if (!_isSearching || _searchPoints.Count == 0)
+            return NodeState.Failure;
+
+        _searchTimer += Time.deltaTime;
+
+        if (_searchTimer > _currentSearchDuration)
+        {
+            _isSearching = false;
+            _searchPoints.Clear();
+            return NodeState.Failure;
+        }
+
+        if (!_agent.pathPending && _agent.remainingDistance < 1f)
+        {
+            _currentSearchIndex++;
+
+            if (_currentSearchIndex < _searchPoints.Count)
+            {
+                _agent.SetDestination(_searchPoints[_currentSearchIndex]);
+            }
+            else
+            {
+                _currentSearchIndex = 0;
+                _agent.SetDestination(_searchPoints[0]);
+            }
+        }
+
+        return NodeState.Running;
+    }
+
+
+    private bool HasLastKnownPosition()
+    {
+        return !_isSearching && _lastKnownPlayerPos != Vector3.zero;
+    }
+
+    private void InitializeSearchInChunk(Vector3 playerLastPos)
+    {
+        MazeChunk playerChunk = _mapManager.GetChunkFromWorldPosition(playerLastPos);
+        if (playerChunk == null)
+        {
+            Debug.LogWarning("Aucun chunk trouvé pour la position du joueur.");
+            return;
+        }
+
+        List<Vector3> randomCells = _mapManager.GetRandomCellsInChunk(playerChunk, 10);
+
+        _searchPoints.Clear();
+        foreach (Vector3 cell in randomCells)
+        {
+            if (cell != null)
+                _searchPoints.Add(cell);
+        }
+
+        _currentSearchIndex = 0;
+        _isSearching = true;
+        _currentSearchDuration = Random.Range(_searchDurationMin, _searchDurationMax);
+        _searchTimer = 0f;
+
+        if (_searchPoints.Count > 0)
+        {
+            _enemyPath = randomCells;
+        }
+    }
+
+
+
 
     private bool PlayerVisible()
     {
@@ -104,14 +197,15 @@ public class EnemyBT : MonoBehaviour
 
     private NodeState ChasePlayer()
     {
-        //Make sure the enemy follows you thanks to the “marks” left by the player's sprint. 
         if (_playerTarget == null)
             return NodeState.Failure;
+
+        _isSearching = false;
+        _searchPoints.Clear();
 
         _agent.destination = _playerTarget.position;
         return NodeState.Running;
     }
-
 
     private void OnTriggerEnter(Collider other)
     {
@@ -176,4 +270,5 @@ public class EnemyBT : MonoBehaviour
         _newPosChoosed = true;
         return randPos;
     }
+    #endregion
 }

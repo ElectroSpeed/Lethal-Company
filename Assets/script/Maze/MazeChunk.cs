@@ -12,6 +12,7 @@ public abstract class MazeChunk : MonoBehaviour
     public int _seed;
     public System.Random _rng;
 
+    private Bounds _bounds;
 
     [HideInInspector] public readonly List<MazeCell> _chunkCells = new();
     /*[HideInInspector]*/
@@ -33,6 +34,7 @@ public abstract class MazeChunk : MonoBehaviour
         _seed = seed;
         _rng = new System.Random(_seed);
         CallGenerateMaze();
+        CalculateBounds();
     }
 
     public void AddDoorPair(MazeCell localCell, MazeCell neighborCell, WallOrientation orientation)
@@ -43,5 +45,19 @@ public abstract class MazeChunk : MonoBehaviour
             neighborCell = neighborCell,
             orientation = orientation
         });
+    }
+
+    private void CalculateBounds()
+    {
+        float sizeX = _width * _cellSize;
+        float sizeZ = _height * _cellSize;
+
+        Vector3 center = transform.position + new Vector3(sizeX / 2f, 0, sizeZ / 2f);
+        _bounds = new Bounds(center, new Vector3(sizeX, 10f, sizeZ)); 
+    }
+
+    public bool Contains(Vector3 worldPos)
+    {
+        return _bounds.Contains(worldPos);
     }
 }

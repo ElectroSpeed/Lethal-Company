@@ -205,7 +205,7 @@ public class MapManager : NetworkBehaviour
             availableChunks.RemoveAt(randIndex);
             Vector3 spawnPos = chosenChunk._chunkCells[UnityEngine.Random.Range(0, chosenChunk._chunkCells.Count - 1)].transform.position;
             GameObject newEnemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
-            newEnemy.GetComponent<EnemyBT>().SetEnemyPathOnMap(GetRandomCellsOnMap());
+            newEnemy.GetComponent<EnemyBT>().Initialize(this);
             if (newEnemy.TryGetComponent(out NetworkObject NetObj))
             {
                 NetObj.Spawn(true);
@@ -278,9 +278,6 @@ public class MapManager : NetworkBehaviour
             }
         }
     }
-
-
-
 
     #region Connect Chunk 
 
@@ -386,5 +383,33 @@ public class MapManager : NetworkBehaviour
     //    link.autoUpdate = true;
     //}
     #endregion
+
+
+    public MazeChunk GetChunkFromWorldPosition(Vector3 worldPos)
+    {
+        foreach (MazeChunk chunk in _mapChunks)
+        {
+            if (chunk != null && chunk.Contains(worldPos))
+                return chunk;
+        }
+
+        return null;
+    }
+
+
+    public List<Vector3> GetRandomCellsInChunk(MazeChunk chunk, int count)
+    {
+        List<Vector3> result = new();
+        List<MazeCell> available = new List<MazeCell>(chunk._chunkCells); 
+
+        for (int i = 0; i < count && available.Count > 0; i++)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, available.Count);
+            result.Add(available[randomIndex].transform.position);
+            available.RemoveAt(randomIndex);
+        }
+
+        return result;
+    }
 }
 
