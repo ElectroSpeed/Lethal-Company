@@ -2,11 +2,11 @@ using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
-public class MonsterCallItem : Item
+public class CloseDoorItem : Item
 {
-    [Header("Monster Call Settings")]
+    [Header("Close Door Settings")]
     [SerializeField] private float _cooldownTime = 10f;
-    [SerializeField] private float _effectDuration = 5f;
+    [SerializeField] private float _effectDuration = 20f;
 
     private NetworkVariable<bool> _canInteractNet = new NetworkVariable<bool>(
         true,
@@ -33,11 +33,11 @@ public class MonsterCallItem : Item
             return;
 
         base.Interact(player);
-        ReactiveTrapServerRpc(player.NetworkObjectId);
+        ActivateTrapServerRpc(player.NetworkObjectId);
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void ReactiveTrapServerRpc(ulong playerId, ServerRpcParams rpcParams = default)
+    private void ActivateTrapServerRpc(ulong playerId)
     {
         if (!_canInteractNet.Value)
             return;
@@ -48,28 +48,27 @@ public class MonsterCallItem : Item
             return;
 
         Player activatingPlayer = playerObj.GetComponent<Player>();
-        
-        EnemyBT[] allEnemies = FindObjectsOfType<EnemyBT>();
-        foreach (EnemyBT enemy in allEnemies)
-        {
-            enemy.ForceChasePlayer(activatingPlayer.transform);
-        }
-        
-        StartCoroutine(TrapEffectRoutine());
+        MapManager map = FindObjectOfType<MapManager>();
+
+        if (map == null)
+            return;
+
+        MazeChunk playerChunk = map.GetChunkFromWorldPosition(activatingPlayer.transform.position);
+
+        if (playerChunk == null)
+            return;
+
+        StartCoroutine(CloseChunkRoutine(map, playerChunk));
         StartCoroutine(CooldownRoutine());
     }
 
-    private IEnumerator TrapEffectRoutine()
+    private IEnumerator CloseChunkRoutine(MapManager map, MazeChunk chunk)
     {
+        map.SetChunkDoorsStateClientRpc(map.GetChunkIndex(chunk), false);
+
         yield return new WaitForSeconds(_effectDuration);
         
-        EnemyBT[] allEnemies = FindObjectsOfType<EnemyBT>();
-        foreach (EnemyBT enemy in allEnemies)
-        {
-            enemy.StopForcedChase();
-        }
-
-        Debug.Log("Tous les ennemis ont arrêté la chasse forcée (fin de l'effet).");
+        map.SetChunkDoorsStateClientRpc(map.GetChunkIndex(chunk), true);
     }
 
     private IEnumerator CooldownRoutine()

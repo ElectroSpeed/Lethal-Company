@@ -21,20 +21,6 @@ public class MazeChunkLabyrinth : MazeChunk
         GenerateMazeFusion();
     }
 
-    //public void BakeNashMeshSurface()
-    //{
-    //    if (_navMeshSurface == null)
-    //    {
-    //        if (gameObject.TryGetComponent(out NavMeshSurface surface))
-    //        {
-    //            _navMeshSurface = surface;
-    //        }
-    //        _navMeshSurface = gameObject.AddComponent<NavMeshSurface>();
-    //    }
-
-    //    _navMeshSurface.BuildNavMesh();
-    //}
-
     private void GenerateGrid(GameObject cellPrefab, int width, int height, int cellSize)
     {
         if (cellPrefab == null || width <= 0 || height <= 0 || cellSize <= 0)
@@ -235,6 +221,18 @@ public class MazeChunkLabyrinth : MazeChunk
         }
 
         return deadEnds;
+    }
+    
+    public void SetDoorsState(bool isOpen)
+    {
+        foreach (var pair in _doorPairs)
+        {
+            if (pair.localCell == null || pair.neighborCell == null)
+                continue;
+            
+            pair.localCell.SetWallActive(pair.orientation, !isOpen);
+            pair.neighborCell.SetWallActive(pair.neighborCell.GetOppositeWallOrientation(pair.orientation), !isOpen);
+        }
     }
 
 }

@@ -676,8 +676,8 @@ MonoBehaviour:
   _height: 5
   _chunkSize: {x: 25, y: 25}
   _safeChunk: {fileID: 0}
-  _itemCountOnMap: 10
-  _itemOnMap: {fileID: 6836690440702492856, guid: d4ccc57277719914aae79d362d2e8d2e, type: 3}
+  _itemCountOnMap: 11
+  _itemOnMap: {fileID: -2934041028049964525, guid: ced11b937f4feb24a9bf25d54426d05d, type: 3}
   _enemyPrefab: {fileID: 9199378727973916283, guid: a0daa5aefa9cb1146ba08deaff072469, type: 3}
   _maxEnemyToSpawn: 4
   _nav: {fileID: 0}

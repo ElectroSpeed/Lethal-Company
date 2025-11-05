@@ -10,7 +10,7 @@ public class EnemyBT : MonoBehaviour
     public float _wanderRadius = 2000f;
     public float _wanderInterval = 10f;
 
-    private NavMeshAgent _agent;
+    [SerializeField] private NavMeshAgent _agent;
     private Node _rootNode;
     private float _wanderTimer;
 
@@ -28,8 +28,6 @@ public class EnemyBT : MonoBehaviour
     private List<Vector3> _searchPoints = new();
     private int _currentSearchIndex = 0;
 
-
-
     [Header("Enemy path")]
     [SerializeField] private List<Vector3> _enemyPath = new();
     private bool _newPosChoosed;
@@ -37,6 +35,9 @@ public class EnemyBT : MonoBehaviour
     [Header("Players ref")]
     private List<Player> _players = new();
     [SerializeField] private LayerMask _visionMask;
+    
+    private bool _isForcedChase = false;
+
 
     public void SetEnemyPathOnMap(List<MazeCell> cells)
     {
@@ -74,15 +75,18 @@ public class EnemyBT : MonoBehaviour
         GetComponent<SphereCollider>().radius = _detectionRange;
     }
 
-
     void Update()
     {
+        if (_isForcedChase && _playerTarget != null)
+        {
+            _agent.SetDestination(_playerTarget.position);
+            return;
+        }
+
         _rootNode.Evaluate();
     }
 
-
-
-    #region 
+    #region Player Detection
 
     private bool CheckIfPlayerIsTargetable()
     {
@@ -119,6 +123,14 @@ public class EnemyBT : MonoBehaviour
         return false;
     }
 
+    private bool PlayerVisible()
+    {
+        return CheckIfPlayerIsTargetable();
+    }
+
+    #endregion
+
+    #region Behavior Tree Nodes
 
     private NodeState SearchLastKnownPosition()
     {
@@ -152,7 +164,6 @@ public class EnemyBT : MonoBehaviour
         return NodeState.Running;
     }
 
-
     private bool HasLastKnownPosition()
     {
         return !_isSearching && _lastKnownPlayerPos != Vector3.zero;
@@ -163,7 +174,7 @@ public class EnemyBT : MonoBehaviour
         MazeChunk playerChunk = _mapManager.GetChunkFromWorldPosition(playerLastPos);
         if (playerChunk == null)
         {
-            Debug.LogWarning("Aucun chunk trouv� pour la position du joueur.");
+            Debug.LogWarning("Aucun chunk trouvé pour la position du joueur.");
             return;
         }
 
@@ -172,8 +183,7 @@ public class EnemyBT : MonoBehaviour
         _searchPoints.Clear();
         foreach (Vector3 cell in randomCells)
         {
-            if (cell != null)
-                _searchPoints.Add(cell);
+            _searchPoints.Add(cell);
         }
 
         _currentSearchIndex = 0;
@@ -187,14 +197,6 @@ public class EnemyBT : MonoBehaviour
         }
     }
 
-
-
-
-    private bool PlayerVisible()
-    {
-        return CheckIfPlayerIsTargetable();
-    }
-
     private NodeState ChasePlayer()
     {
         if (_playerTarget == null)
@@ -205,28 +207,6 @@ public class EnemyBT : MonoBehaviour
 
         _agent.destination = _playerTarget.position;
         return NodeState.Running;
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.TryGetComponent(out Player player))
-        {
-            if (!_players.Contains(player))
-            {
-                _players.Add(player);
-            }
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.TryGetComponent(out Player player))
-        {
-            if (_players.Contains(player))
-            {
-                _players.Remove(player);
-            }
-        }
     }
 
     private NodeState Wander()
@@ -252,6 +232,59 @@ public class EnemyBT : MonoBehaviour
         return NodeState.Running;
     }
 
+    #endregion
+
+    #region Forced Chase (Monster Call)
+
+    public void ForceChasePlayer(Transform playerTransform)
+    {
+        if (playerTransform == null || _agent == null)
+            return;
+
+        _playerTarget = playerTransform;
+        _isSearching = false;
+        _searchPoints.Clear();
+
+        _isForcedChase = true;
+        Debug.Log($"{name} est appelé vers {playerTransform.name}");
+    }
+
+    public void StopForcedChase()
+    {
+        _isForcedChase = false;
+        _playerTarget = null;
+        _agent.ResetPath();
+        _isSearching = false;
+        _searchPoints.Clear();
+
+        Debug.Log($"{name} a arrêté la chasse forcée et reprend son comportement normal.");
+    }
+
+    #endregion
+
+    #region Utility / Triggers
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.TryGetComponent(out Player player))
+        {
+            if (!_players.Contains(player))
+            {
+                _players.Add(player);
+            }
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.TryGetComponent(out Player player))
+        {
+            if (_players.Contains(player))
+            {
+                _players.Remove(player);
+            }
+        }
+    }
 
     private Vector3 RandomNavmeshLocation()
     {
@@ -261,14 +294,14 @@ public class EnemyBT : MonoBehaviour
             return transform.position;
         }
 
-
         int randomIndex = Random.Range(0, _enemyPath.Count);
         Vector3 randPos = _enemyPath[randomIndex];
 
         _enemyPath.Remove(randPos);
-
         _newPosChoosed = true;
+
         return randPos;
     }
+
     #endregion
 }

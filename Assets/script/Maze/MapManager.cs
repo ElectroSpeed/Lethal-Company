@@ -202,7 +202,10 @@ public class MapManager : NetworkBehaviour
             availableChunks.RemoveAt(randIndex);
             Vector3 spawnPos = chosenChunk._chunkCells[UnityEngine.Random.Range(0, chosenChunk._chunkCells.Count - 1)].transform.position;
             GameObject newEnemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
-            newEnemy.GetComponent<EnemyBT>().SetEnemyPathOnMap(GetRandomCellsOnMap());
+            EnemyBT enemyBT = newEnemy.GetComponent<EnemyBT>();
+            enemyBT.Initialize(this);
+            enemyBT.SetEnemyPathOnMap(GetRandomCellsOnMap());
+
             if (newEnemy.TryGetComponent(out NetworkObject NetObj))
             {
                 NetObj.Spawn(true);
@@ -524,4 +527,31 @@ public class MapManager : NetworkBehaviour
     #endif
 
     #endregion
+    
+    public int GetChunkIndex(MazeChunk chunk)
+    {
+        return _mapChunks.IndexOf(chunk);
+    }
+
+    [ClientRpc]
+    public void SetChunkDoorsStateClientRpc(int chunkIndex, bool isOpen)
+    {
+        if (chunkIndex < 0 || chunkIndex >= _mapChunks.Count)
+        {
+            return;
+        }
+
+        MazeChunk chunk = _mapChunks[chunkIndex];
+        if (chunk == null)
+        {
+            return;
+        }
+
+        if (chunk.TryGetComponent(out MazeChunkLabyrinth laby))
+        {
+            laby.SetDoorsState(isOpen);
+        }
+    }
+
+
 }
