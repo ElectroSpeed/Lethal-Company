@@ -21,20 +21,6 @@ public class MazeChunkLabyrinth : MazeChunk
         GenerateMazeFusion();
     }
 
-    //public void BakeNashMeshSurface()
-    //{
-    //    if (_navMeshSurface == null)
-    //    {
-    //        if (gameObject.TryGetComponent(out NavMeshSurface surface))
-    //        {
-    //            _navMeshSurface = surface;
-    //        }
-    //        _navMeshSurface = gameObject.AddComponent<NavMeshSurface>();
-    //    }
-
-    //    _navMeshSurface.BuildNavMesh();
-    //}
-
     private void GenerateGrid(GameObject cellPrefab, int width, int height, int cellSize)
     {
         if (cellPrefab == null || width <= 0 || height <= 0 || cellSize <= 0)
@@ -236,42 +222,17 @@ public class MazeChunkLabyrinth : MazeChunk
 
         return deadEnds;
     }
+    
+    public void SetDoorsState(bool isOpen)
+    {
+        foreach (var pair in _doorPairs)
+        {
+            if (pair.localCell == null || pair.neighborCell == null)
+                continue;
+            
+            pair.localCell.SetWallActive(pair.orientation, !isOpen);
+            pair.neighborCell.SetWallActive(pair.neighborCell.GetOppositeWallOrientation(pair.orientation), !isOpen);
+        }
+    }
 
-
-    //public MazeCell CreateNewCell(MazeCell a, WallOrientation direction)
-    //{
-    //    float cellSize = _cellSize; //cell est un carré dont n'importe quell coté marche 
-
-    //    Vector3 newCellPos = a.transform.position;
-
-    //    switch (direction)
-    //    {
-    //        case WallOrientation.Up:
-    //            newCellPos += new Vector3(0, 0, cellSize * 2);
-    //            break;
-    //        case WallOrientation.Down:
-    //            newCellPos += new Vector3(0, 0, -cellSize * 2);
-    //            break;
-    //        case WallOrientation.Left:
-    //            newCellPos += new Vector3(-cellSize * 2, 0, 0);
-    //            break;
-    //        case WallOrientation.Right:
-    //            newCellPos += new Vector3(cellSize * 2, 0, 0);
-    //            break;
-    //    }
-
-    //    newCellPos = Vector3.Lerp(a.transform.position, newCellPos, 0.5f);
-
-    //    MazeCell newCell = Instantiate(_cellPrefab, newCellPos, Quaternion.identity, transform);
-    //    newCell.name = "Cell for NavMesh Surface";
-
-    //    newCell.DestroyWall(WallOrientation.Up, true);
-    //    newCell.DestroyWall(WallOrientation.Down, true);
-    //    newCell.DestroyWall(WallOrientation.Left, true);
-    //    newCell.DestroyWall(WallOrientation.Right, true);
-
-    //    _chunkCells.Add(newCell);
-
-    //    return newCell;
-    //}
 }

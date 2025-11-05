@@ -6,6 +6,7 @@ public class SpawnPlayerManager : NetworkBehaviour
 {
     [SerializeField] private GameObject _playerPrefab;
     [SerializeField] private MapManager _mapManager;
+    [SerializeField] private GameLoop _gameLoop;
 
     private bool _mapGenerated;
 
@@ -30,8 +31,6 @@ public class SpawnPlayerManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-       // _mapGenerated = value;
-
         foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
         {
             OnClientConnected(clientId);
@@ -53,7 +52,7 @@ public class SpawnPlayerManager : NetworkBehaviour
         Vector3 spawnPos = GetSpawnPointWithPlayerID(player, clientId);
         player.GetComponent<Rigidbody>().position = spawnPos;
 
-
+        _gameLoop._players.Add(player.GetComponent<Player>());
 
         var netObj = player.GetComponent<NetworkObject>();
         if (netObj == null)
@@ -61,39 +60,7 @@ public class SpawnPlayerManager : NetworkBehaviour
             netObj = player.AddComponent<NetworkObject>();
         }
         netObj.SpawnAsPlayerObject(clientId);
-
-
-
-        //if (_mapGenerated)
-        //{
-        //    MovePlayerToMapPosition(player, clientId);
-        //}
-        //else
-        //{
-        //    player.SetActive(false);
-        //}
     }
-
-    //private IEnumerator RepositionAllPlayers()
-    //{
-    //    yield return new WaitForSeconds(0.5f);
-
-    //    foreach (var kvp in NetworkManager.Singleton.ConnectedClients)
-    //    {
-    //        var playerObj = kvp.Value.PlayerObject;
-
-    //        if (playerObj == null)
-    //        {
-    //            continue;
-    //        }
-
-    //        MovePlayerToMapPosition(playerObj.gameObject, playerObj.NetworkObjectId);
-    //        playerObj.gameObject.GetComponent<Rigidbody>().isKinematic = false;
-    //        playerObj.gameObject.GetComponent<Rigidbody>().useGravity = true;
-    //        playerObj.gameObject.SetActive(true);
-    //    }
-
-    //}
 
     private Vector3 GetSpawnPointWithPlayerID(GameObject player, ulong playerIndex)
     {
