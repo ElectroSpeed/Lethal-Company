@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -13,9 +12,6 @@ public class EnemyBT : MonoBehaviour
     [SerializeField] private NavMeshAgent _agent;
     private Node _rootNode;
     private float _wanderTimer;
-
-    private bool _isCrossingLink = false;
-
     private Vector3 _lastKnownPlayerPos;
     private float _searchTimer;
     private bool _isSearching;
@@ -35,7 +31,7 @@ public class EnemyBT : MonoBehaviour
     [Header("Players ref")]
     private List<Player> _players = new();
     [SerializeField] private LayerMask _visionMask;
-    
+
     private bool _isForcedChase = false;
 
 
@@ -178,7 +174,7 @@ public class EnemyBT : MonoBehaviour
             return;
         }
 
-        List<Vector3> randomCells = _mapManager.GetRandomCellsInChunk(playerChunk, 10);
+        List<Vector3> randomCells = _mapManager.GetRandomCellsInChunk(playerChunk, 4);
 
         _searchPoints.Clear();
         foreach (Vector3 cell in randomCells)
