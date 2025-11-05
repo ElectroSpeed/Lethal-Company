@@ -345,152 +345,183 @@ public class MapManager : NetworkBehaviour
         labA.AddDoorPair(bottomCellA, topCellB, WallOrientation.Down);
         labB.AddDoorPair(topCellB, bottomCellA, WallOrientation.Up);
     }
-
-    public void RegenerateChunksAroundPlayer(MazeChunk centerChunk, int range)
-    {
-        if (!IsServer || centerChunk == null) return;
-
-        List<MazeChunkLabyrinth> chunksToRegen = new();
-
-        foreach (MazeChunk chunk in _mapChunks)
-        {
-            if (chunk == null || chunk is not MazeChunkLabyrinth laby) continue;
-
-            int dx = Mathf.Abs(GetChunkX(chunk) - GetChunkX(centerChunk));
-            int dy = Mathf.Abs(GetChunkY(chunk) - GetChunkY(centerChunk));
-
-            if (((dx <= range && dy == 0) || (dy <= range && dx == 0)) && chunk != centerChunk)
-            {
-                if (!ChunkContainsImportantEntity(chunk))
-                {
-                    laby._seed = UnityEngine.Random.Range(0, int.MaxValue);
-                    chunksToRegen.Add(laby);
-                }
-            }
-        }
-
-        foreach (var laby in chunksToRegen)
-        {
-            StartCoroutine(RegenerateChunk(laby, laby._seed));
-        }
-
-        SendChunkSeedsToClientsClientRpc(
-            chunksToRegen.ConvertAll(c => _mapChunks.IndexOf(c)).ToArray(),
-            chunksToRegen.ConvertAll(c => c._seed).ToArray()
-        );
-
-        _nav.BuildNavMesh();
-    }
-
-    [ClientRpc]
-    private void SendChunkSeedsToClientsClientRpc(int[] chunkIndices, int[] seeds)
-    {
-        if (IsServer) return;
-
-        for (int i = 0; i < chunkIndices.Length; i++)
-        {
-            MazeChunk chunk = _mapChunks[chunkIndices[i]];
-            if (chunk == null) continue;
-
-            StartCoroutine(WaitAndRegenerateChunk(chunk, seeds[i]));
-        }
-    }
-
-    private IEnumerator WaitAndRegenerateChunk(MazeChunk chunk, int seed)
-    {
-        yield return new WaitUntil(() => chunk._isGenerated);
-        StartCoroutine(RegenerateChunk(chunk, seed));
-    }
-
-    private IEnumerator RegenerateChunk(MazeChunk chunk, int seed)
-    {
-        if (chunk == null) yield break;
-
-        if (chunk is MazeChunkLabyrinth laby)
-        {
-            laby._seed = seed;
-            laby.RegenerateMaze();
-            yield break;
-        }
-
-        yield return null;
-    }
-
-    private bool ChunkContainsImportantEntity(MazeChunk chunk)
-    {
-        if (chunk is MazeChunkLabyrinth laby && laby._containItem) return true;
-
-        Collider[] colliders = Physics.OverlapBox(
-            chunk.transform.position + new Vector3(_chunkSize.x / 2f, 0f, _chunkSize.y / 2f),
-            new Vector3(_chunkSize.x / 2f, 10f, _chunkSize.y / 2f)
-        );
-
-        foreach (var col in colliders)
-        {
-            if (col.CompareTag("Enemy") || col.CompareTag("Player"))
-                return true;
-        }
-
-        return false;
-    }
-
-    private int GetChunkX(MazeChunk chunk)
-    {
-        int index = _mapChunks.IndexOf(chunk);
-        if (index < 0) return -1;
-        return index % _width;
-    }
-
-    private int GetChunkY(MazeChunk chunk)
-    {
-        int index = _mapChunks.IndexOf(chunk);
-        if (index < 0) return -1;
-        return index / _width;
-    }
-
-    public MazeChunk GetChunkFromPosition(Vector3 position)
+    
+    public MazeChunk GetChunkFromWorldPosition(Vector3 worldPos)
     {
         foreach (MazeChunk chunk in _mapChunks)
         {
-            if (chunk == null) continue;
-
-            Vector3 center = chunk.transform.position + new Vector3((_chunkSize.x / 2f) - (chunk._cellSize / 2), 0, (_chunkSize.y / 2f) - (chunk._cellSize / 2));
-
-            if (position.x >= center.x - _chunkSize.x / 2f &&
-                position.x <= center.x + _chunkSize.x / 2f &&
-                position.z >= center.z - _chunkSize.y / 2f &&
-                position.z <= center.z + _chunkSize.y / 2f)
+            if (chunk != null && chunk.Contains(worldPos))
                 return chunk;
         }
+
         return null;
     }
 
-#if UNITY_EDITOR
-    private void OnDrawGizmos()
+
+    public List<Vector3> GetRandomCellsInChunk(MazeChunk chunk, int count)
     {
-        if (_mapChunks == null || _mapChunks.Count == 0) return;
+        List<Vector3> result = new();
+        List<MazeCell> available = new List<MazeCell>(chunk._chunkCells); 
 
-        MazeChunk playerChunk = null;
-        var tracker = FindObjectOfType<PlayerChunkTracker>();
-        if (Application.isPlaying && tracker != null)
-            playerChunk = tracker._currentChunk;
-
-        foreach (MazeChunk chunk in _mapChunks)
+        for (int i = 0; i < count && available.Count > 0; i++)
         {
-            if (chunk == null) continue;
-
-            Vector3 center = chunk.transform.position + new Vector3((_chunkSize.x / 2f) - (chunk._cellSize / 2), 0, (_chunkSize.y / 2f) - (chunk._cellSize / 2));
-            Vector3 size = new Vector3(_chunkSize.x, 0.5f, _chunkSize.y);
-
-            Gizmos.color = (chunk == playerChunk) ? new Color(1, 0.5f, 0, 0.35f) : new Color(0, 1, 0, 0.2f);
-            Gizmos.DrawCube(center, size);
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireCube(center, size);
-#if UNITY_EDITOR
-            UnityEditor.Handles.color = Color.white;
-            UnityEditor.Handles.Label(center + Vector3.up * 2f, $"[{GetChunkX(chunk)}, {GetChunkY(chunk)}]");
-#endif
+            int randomIndex = UnityEngine.Random.Range(0, available.Count);
+            result.Add(available[randomIndex].transform.position);
+            available.RemoveAt(randomIndex);
         }
+
+        return result;
     }
-#endif
+
+    #region Regeneration Map
+
+        public void RegenerateChunksAroundPlayer(MazeChunk centerChunk, int range)
+        {
+            if (!IsServer || centerChunk == null) return;
+
+            List<MazeChunkLabyrinth> chunksToRegen = new();
+
+            foreach (MazeChunk chunk in _mapChunks)
+            {
+                if (chunk == null || chunk is not MazeChunkLabyrinth laby) continue;
+
+                int dx = Mathf.Abs(GetChunkX(chunk) - GetChunkX(centerChunk));
+                int dy = Mathf.Abs(GetChunkY(chunk) - GetChunkY(centerChunk));
+
+                if (((dx <= range && dy == 0) || (dy <= range && dx == 0)) && chunk != centerChunk)
+                {
+                    if (!ChunkContainsImportantEntity(chunk))
+                    {
+                        laby._seed = UnityEngine.Random.Range(0, int.MaxValue);
+                        chunksToRegen.Add(laby);
+                    }
+                }
+            }
+
+            foreach (var laby in chunksToRegen)
+            {
+                StartCoroutine(RegenerateChunk(laby, laby._seed));
+            }
+
+            SendChunkSeedsToClientsClientRpc(
+                chunksToRegen.ConvertAll(c => _mapChunks.IndexOf(c)).ToArray(),
+                chunksToRegen.ConvertAll(c => c._seed).ToArray()
+            );
+
+            _nav.BuildNavMesh();
+        }
+
+        [ClientRpc]
+        private void SendChunkSeedsToClientsClientRpc(int[] chunkIndices, int[] seeds)
+        {
+            if (IsServer) return;
+
+            for (int i = 0; i < chunkIndices.Length; i++)
+            {
+                MazeChunk chunk = _mapChunks[chunkIndices[i]];
+                if (chunk == null) continue;
+
+                StartCoroutine(WaitAndRegenerateChunk(chunk, seeds[i]));
+            }
+        }
+
+        private IEnumerator WaitAndRegenerateChunk(MazeChunk chunk, int seed)
+        {
+            yield return new WaitUntil(() => chunk._isGenerated);
+            StartCoroutine(RegenerateChunk(chunk, seed));
+        }
+
+        private IEnumerator RegenerateChunk(MazeChunk chunk, int seed)
+        {
+            if (chunk == null) yield break;
+
+            if (chunk is MazeChunkLabyrinth laby)
+            {
+                laby._seed = seed;
+                laby.RegenerateMaze();
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        private bool ChunkContainsImportantEntity(MazeChunk chunk)
+        {
+            if (chunk is MazeChunkLabyrinth laby && laby._containItem) return true;
+
+            Collider[] colliders = Physics.OverlapBox(
+                chunk.transform.position + new Vector3(_chunkSize.x / 2f, 0f, _chunkSize.y / 2f),
+                new Vector3(_chunkSize.x / 2f, 10f, _chunkSize.y / 2f)
+            );
+
+            foreach (var col in colliders)
+            {
+                if (col.CompareTag("Enemy") || col.CompareTag("Player"))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private int GetChunkX(MazeChunk chunk)
+        {
+            int index = _mapChunks.IndexOf(chunk);
+            if (index < 0) return -1;
+            return index % _width;
+        }
+
+        private int GetChunkY(MazeChunk chunk)
+        {
+            int index = _mapChunks.IndexOf(chunk);
+            if (index < 0) return -1;
+            return index / _width;
+        }
+
+        public MazeChunk GetChunkFromPosition(Vector3 position)
+        {
+            foreach (MazeChunk chunk in _mapChunks)
+            {
+                if (chunk == null) continue;
+
+                Vector3 center = chunk.transform.position + new Vector3((_chunkSize.x / 2f) - (chunk._cellSize / 2), 0, (_chunkSize.y / 2f) - (chunk._cellSize / 2));
+
+                if (position.x >= center.x - _chunkSize.x / 2f &&
+                    position.x <= center.x + _chunkSize.x / 2f &&
+                    position.z >= center.z - _chunkSize.y / 2f &&
+                    position.z <= center.z + _chunkSize.y / 2f)
+                    return chunk;
+            }
+            return null;
+        }
+
+    #if UNITY_EDITOR
+        private void OnDrawGizmos()
+        {
+            if (_mapChunks == null || _mapChunks.Count == 0) return;
+
+            MazeChunk playerChunk = null;
+            var tracker = FindObjectOfType<PlayerChunkTracker>();
+            if (Application.isPlaying && tracker != null)
+                playerChunk = tracker._currentChunk;
+
+            foreach (MazeChunk chunk in _mapChunks)
+            {
+                if (chunk == null) continue;
+
+                Vector3 center = chunk.transform.position + new Vector3((_chunkSize.x / 2f) - (chunk._cellSize / 2), 0, (_chunkSize.y / 2f) - (chunk._cellSize / 2));
+                Vector3 size = new Vector3(_chunkSize.x, 0.5f, _chunkSize.y);
+
+                Gizmos.color = (chunk == playerChunk) ? new Color(1, 0.5f, 0, 0.35f) : new Color(0, 1, 0, 0.2f);
+                Gizmos.DrawCube(center, size);
+                Gizmos.color = Color.green;
+                Gizmos.DrawWireCube(center, size);
+    #if UNITY_EDITOR
+                UnityEditor.Handles.color = Color.white;
+                UnityEditor.Handles.Label(center + Vector3.up * 2f, $"[{GetChunkX(chunk)}, {GetChunkY(chunk)}]");
+    #endif
+            }
+        }
+    #endif
+
+    #endregion
 }
