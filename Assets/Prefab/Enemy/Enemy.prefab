@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 7446501199016809445}
   - component: {fileID: 7601571509697120852}
   - component: {fileID: 8492245064141906871}
+  - component: {fileID: -6479771862591365245}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -147,12 +148,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _playerTarget: {fileID: 0}
   _detectionRange: 15
-  _wanderRadius: 500
-  _wanderInterval: 25
-  _enemyPath: []
   _visionMask:
     serializedVersion: 2
     m_Bits: 384
+  _wanderRadius: 500
+  _wanderInterval: 25
+  _searchDurationMin: 10
+  _searchDurationMax: 30
+  _agent: {fileID: 0}
+  _enemyPath: []
 --- !u!135 &8492245064141906871
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -174,3 +178,16 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-6479771862591365245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9199378727973916283}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f667aec2975d7f479a217e7fa03a914, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _agent: {fileID: 7446501199016809445}

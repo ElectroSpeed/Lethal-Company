@@ -35,6 +35,10 @@ public class EnemyBT : MonoBehaviour
     private bool _isForcedChase = false;
 
 
+
+    private EnemyState _enemyState;
+
+
     public void SetEnemyPathOnMap(List<MazeCell> cells)
     {
         _enemyPath.Clear();
@@ -47,6 +51,7 @@ public class EnemyBT : MonoBehaviour
     public void Initialize(MapManager manager)
     {
         _mapManager = manager;
+        _enemyState = GetComponent<EnemyState>();   
         SetEnemyPathOnMap(_mapManager.GetRandomCellsOnMap());
     }
 
@@ -198,6 +203,8 @@ public class EnemyBT : MonoBehaviour
         if (_playerTarget == null)
             return NodeState.Failure;
 
+
+        _enemyState.ChangeAIState(AiState.Angry);
         _isSearching = false;
         _searchPoints.Clear();
 
@@ -217,6 +224,7 @@ public class EnemyBT : MonoBehaviour
             {
                 _agent.SetDestination(hit.position);
                 _newPosChoosed = true;
+                _enemyState.ChangeAIState(AiState.Default);
             }
 
             _wanderTimer = 0f;
@@ -237,6 +245,7 @@ public class EnemyBT : MonoBehaviour
         if (playerTransform == null || _agent == null)
             return;
 
+        _enemyState.ChangeAIState(AiState.Angry);
         _playerTarget = playerTransform;
         _isSearching = false;
         _searchPoints.Clear();
@@ -252,6 +261,7 @@ public class EnemyBT : MonoBehaviour
         _agent.ResetPath();
         _isSearching = false;
         _searchPoints.Clear();
+        _enemyState.ChangeAIState(AiState.Default);
 
         Debug.Log($"{name} a arrêté la chasse forcée et reprend son comportement normal.");
     }
