@@ -67,7 +67,7 @@ public class MazeCell : MonoBehaviour
             GameObject closedWall = _wallContainer.GetChild(wallIndex).gameObject;
             if (closedWall.activeSelf)
             {
-                print("T'es un looser tu t'es trompé");
+                print("T'es un looser tu t'es trompï¿½");
             }
 
             closedWall.SetActive(true);
@@ -78,4 +78,15 @@ public class MazeCell : MonoBehaviour
     {
 
     }
+    
+    public void SetWallActive(WallOrientation orientation, bool active)
+    {
+        int index = GetWallIndex(orientation);
+        if (index < 0) return;
+
+        Transform wall = _wallContainer.GetChild(index);
+        if (wall != null)
+            wall.gameObject.SetActive(active);
+    }
+
 }
