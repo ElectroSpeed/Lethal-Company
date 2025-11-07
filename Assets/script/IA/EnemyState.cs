@@ -24,7 +24,7 @@ public class EnemyState : MonoBehaviour
                 break;
 
             case AiState.Angry:
-                _agent.speed = Random.Range(4.5f, 5.5f);
+                _agent.speed = 7f;
                 break;
 
             case AiState.Attack:

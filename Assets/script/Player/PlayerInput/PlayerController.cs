@@ -38,6 +38,10 @@ public class PlayerController : NetworkBehaviour
     private float _cameraPitch = 0f;
     private bool _isGrounded;
 
+
+    [Header("Block Player Input")]
+    public bool _blockInput { get; private set; } = false;
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -90,6 +94,12 @@ public class PlayerController : NetworkBehaviour
         RotatePlayerAndCamera();
     }
 
+    public void BlockPlayerInput(bool value)
+    {
+        _blockInput = value;
+        _rb.constraints = value ? RigidbodyConstraints.FreezePosition : RigidbodyConstraints.FreezeRotation;
+    }
+
     private void MovePlayer()
     {
         float targetSpeed = _isSprinting && _isGrounded
@@ -127,26 +137,26 @@ public class PlayerController : NetworkBehaviour
     #region Input Callbacks
     public void OnMove(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || _blockInput) return;
         _moveInput = context.ReadValue<Vector2>();
     }
 
     public void OnLook(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || _blockInput) return;
         _lookInput = context.ReadValue<Vector2>();
     }
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || _blockInput) return;
         if (context.performed)
             _jumpPressed = true;
     }
 
     public void OnSprint(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || _blockInput) return;
 
         if (context.started)
             _isSprinting = true;
@@ -158,7 +168,7 @@ public class PlayerController : NetworkBehaviour
 
     public void OnInteract(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || _blockInput) return;
         if (!context.started) return;
         if (_currentInteractible == null) return;
 

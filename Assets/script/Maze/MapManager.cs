@@ -23,7 +23,7 @@ public class MapManager : NetworkBehaviour
     [SerializeField] private Item _objectifItemFlower;
 
     [Min(1)] public int _callMonsterItemMaxCount;
-    [SerializeField] private Item _callMonsterItem;
+    [SerializeField] private Trap _callMonsterItem;
 
 
     [Header("Spawn Enemy")]
@@ -169,7 +169,7 @@ public class MapManager : NetworkBehaviour
         }
         for (int i = 0; i < _callMonsterItemMaxCount; i++)
         {
-            PlaceItem(_callMonsterItem);
+            PlaceTrap(_callMonsterItem);
         }
 
 
@@ -214,6 +214,7 @@ public class MapManager : NetworkBehaviour
             EnemyBT enemyBT = newEnemy.GetComponent<EnemyBT>();
             enemyBT.Initialize(this);
             enemyBT.SetEnemyPathOnMap(GetRandomCellsOnMap());
+            EventBus.Publish<EnemyBT>(EventType.SpawnEnemy, enemyBT);
 
             if (newEnemy.TryGetComponent(out NetworkObject NetObj))
             {
@@ -274,6 +275,44 @@ public class MapManager : NetworkBehaviour
         if (newItemObject.TryGetComponent(out Item newItem))
         {
             if (newItem.TryGetComponent(out NetworkObject netObj))
+            {
+                netObj.Spawn(true);
+            }
+            else
+            {
+                newItemObject.AddComponent<NetworkObject>().Spawn(true);
+            }
+        }
+    }
+
+    private void PlaceTrap(Trap trap)
+    {
+        if (!IsServer) return;
+
+        //////////////////////////////A Changer pour avoir des traps un peu partout sur la map/////////////////////////////////
+        List<MazeChunkLabyrinth> chunksWithDeadEnds = new();
+        foreach (var chunk in _mapChunks)
+        {
+            if (chunk.TryGetComponent(out MazeChunkLabyrinth mazeLaby))
+            {
+                if (mazeLaby.GetDeadEndCells().Count > 0 && !mazeLaby._containItem)
+                    chunksWithDeadEnds.Add(mazeLaby);
+            }
+        }
+
+        if (chunksWithDeadEnds.Count == 0) return;
+        MazeChunkLabyrinth selectedChunk = chunksWithDeadEnds[UnityEngine.Random.Range(0, chunksWithDeadEnds.Count)];
+        List<MazeCell> deadEnds = selectedChunk.GetDeadEndCells();
+        MazeCell selectedCell = deadEnds[UnityEngine.Random.Range(0, deadEnds.Count)];
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        selectedChunk._containItem = true;
+
+        GameObject newItemObject = Instantiate(trap.gameObject, selectedCell.transform.position, Quaternion.identity);
+
+        if (newItemObject.TryGetComponent(out Trap newtrap))
+        {
+            if (newtrap.TryGetComponent(out NetworkObject netObj))
             {
                 netObj.Spawn(true);
             }

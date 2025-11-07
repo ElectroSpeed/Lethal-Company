@@ -694,7 +694,7 @@ MonoBehaviour:
   _objectiveFlowerItemMaxCount: 3
   _objectifItemFlower: {fileID: 7045465990555162199, guid: 3dd737de0de32724f9924302cd0632cf, type: 3}
   _callMonsterItemMaxCount: 3
-  _callMonsterItem: {fileID: 6836690440702492856, guid: d4ccc57277719914aae79d362d2e8d2e, type: 3}
+  _callMonsterItem: {fileID: 5469781219087308100, guid: 62a05cdec4f470b4ca0a8f8ebc17dd79, type: 3}
   _enemyPrefab: {fileID: 4431165640441577728, guid: 13d489d1cf0e8564a8b81a02cb7e46e3, type: 3}
   _maxEnemyToSpawn: 4
   _nav: {fileID: 0}

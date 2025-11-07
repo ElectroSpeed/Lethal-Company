@@ -228,7 +228,7 @@ public class EnemyBT : NetworkBehaviour
     {
         _wanderTimer += Time.deltaTime;
 
-        if ((_wanderTimer >= _wanderInterval || !_agent.hasPath || _agent.remainingDistance < 0.5f) && !_newPosChoosed)
+        if ((_wanderTimer >= _wanderInterval || !_agent.hasPath || _agent.remainingDistance < 1.25f) && !_newPosChoosed)
         {
             Vector3 newPos = RandomNavmeshLocation();
 
