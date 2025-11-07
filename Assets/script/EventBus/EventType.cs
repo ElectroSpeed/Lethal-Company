@@ -5,4 +5,6 @@ public enum EventType
     MapGenerated,
     AllPlayerWasConnected,
     FillEnemyPath,
+    PlayerDie,
+
 }

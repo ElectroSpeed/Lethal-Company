@@ -34,10 +34,7 @@ public class EnemyBT : MonoBehaviour
 
     private bool _isForcedChase = false;
 
-
-
     private EnemyState _enemyState;
-
 
     public void SetEnemyPathOnMap(List<MazeCell> cells)
     {
@@ -51,7 +48,7 @@ public class EnemyBT : MonoBehaviour
     public void Initialize(MapManager manager)
     {
         _mapManager = manager;
-        _enemyState = GetComponent<EnemyState>();   
+        _enemyState = GetComponent<EnemyState>();
         SetEnemyPathOnMap(_mapManager.GetRandomCellsOnMap());
     }
 
@@ -66,6 +63,7 @@ public class EnemyBT : MonoBehaviour
         Node search = new ActionNode(() => SearchLastKnownPosition());
 
         Node wander = new ActionNode(() => Wander());
+
 
         Sequence chaseSequence = new Sequence(new List<Node> { playerVisible, chase });
         Sequence searchSequence = new Sequence(new List<Node> { hasLastKnown, search });
@@ -86,12 +84,12 @@ public class EnemyBT : MonoBehaviour
 
         _rootNode.Evaluate();
     }
-
     #region Player Detection
 
     private bool CheckIfPlayerIsTargetable()
     {
         _playerTarget = null;
+        if (_players.Count <= 0) return false;
 
         foreach (Player player in _players)
         {
@@ -203,7 +201,6 @@ public class EnemyBT : MonoBehaviour
         if (_playerTarget == null)
             return NodeState.Failure;
 
-
         _enemyState.ChangeAIState(AiState.Angry);
         _isSearching = false;
         _searchPoints.Clear();
@@ -291,6 +288,16 @@ public class EnemyBT : MonoBehaviour
             }
         }
     }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.collider.TryGetComponent(out Player player))
+        {
+            print($"{player.name} is colliding with enemy : Player Death");
+           // player._playerStats._healthComponent.Die(_mapManager._safeChunk, player);
+        }
+    }
+
 
     private Vector3 RandomNavmeshLocation()
     {

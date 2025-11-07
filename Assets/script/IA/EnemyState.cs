@@ -27,6 +27,10 @@ public class EnemyState : MonoBehaviour
                 _agent.speed = Random.Range(4.5f, 5.5f);
                 break;
 
+            case AiState.Attack:
+                _agent.speed = 10.0f;
+                break;
+
             case AiState.Waiting:
                 _agent.speed = 0f;
                 break;
@@ -39,5 +43,6 @@ public enum AiState
 {
     Default,
     Angry,
+    Attack,
     Waiting,
 }

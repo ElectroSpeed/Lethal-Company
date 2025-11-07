@@ -12,7 +12,7 @@ public abstract class MazeChunk : MonoBehaviour
     public int _seed;
     public System.Random _rng;
 
-    private Bounds _bounds;
+    public Bounds _bounds;
 
     [HideInInspector] public readonly List<MazeCell> _chunkCells = new();
     /*[HideInInspector]*/
