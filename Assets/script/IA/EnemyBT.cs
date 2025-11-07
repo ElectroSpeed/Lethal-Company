@@ -1,8 +1,15 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class EnemyBT : MonoBehaviour
+/// <summary>
+/// Enemy behaviour with Netcode protections:
+/// - Only server runs authoritative logic (OnTrigger/OnCollision, AI decisions that affect players).
+/// - Provides ServerRpc for client requests to ForceChase (optional).
+/// </summary>
+[RequireComponent(typeof(NavMeshAgent))]
+public class EnemyBT : NetworkBehaviour
 {
     public Transform _playerTarget;
     public float _detectionRange = 10f;
@@ -54,6 +61,7 @@ public class EnemyBT : MonoBehaviour
 
     void Start()
     {
+        // NavMeshAgent required
         _agent = GetComponent<NavMeshAgent>();
 
         Node playerVisible = new ConditionNode(() => PlayerVisible());
@@ -64,18 +72,24 @@ public class EnemyBT : MonoBehaviour
 
         Node wander = new ActionNode(() => Wander());
 
-
         Sequence chaseSequence = new Sequence(new List<Node> { playerVisible, chase });
         Sequence searchSequence = new Sequence(new List<Node> { hasLastKnown, search });
 
         _rootNode = new Selector(new List<Node> { chaseSequence, searchSequence, wander });
 
         _wanderTimer = _wanderInterval;
-        GetComponent<SphereCollider>().radius = _detectionRange;
+
+        // Set detection collider radius if any
+        var sphere = GetComponent<SphereCollider>();
+        if (sphere != null)
+            sphere.radius = _detectionRange;
     }
 
     void Update()
     {
+        // AI run on server only — prevents clients from running authoritative logic.
+        if (!IsServer) return;
+
         if (_isForcedChase && _playerTarget != null)
         {
             _agent.SetDestination(_playerTarget.position);
@@ -84,6 +98,7 @@ public class EnemyBT : MonoBehaviour
 
         _rootNode.Evaluate();
     }
+
     #region Player Detection
 
     private bool CheckIfPlayerIsTargetable()
@@ -237,10 +252,14 @@ public class EnemyBT : MonoBehaviour
 
     #region Forced Chase (Monster Call)
 
+    /// <summary>
+    /// Server-only: force the enemy to chase a specific player's NetworkObjectId.
+    /// Use RequestForceChaseFromClient to send a request from a client.
+    /// </summary>
     public void ForceChasePlayer(Transform playerTransform)
     {
-        if (playerTransform == null || _agent == null)
-            return;
+        if (!IsServer) return;
+        if (playerTransform == null || _agent == null) return;
 
         _enemyState.ChangeAIState(AiState.Angry);
         _playerTarget = playerTransform;
@@ -248,11 +267,41 @@ public class EnemyBT : MonoBehaviour
         _searchPoints.Clear();
 
         _isForcedChase = true;
-        Debug.Log($"{name} est appelé vers {playerTransform.name}");
+        Debug.Log($"{name} est appelé vers {_playerTarget.name} (serveur).");
+    }
+
+    /// <summary>
+    /// Client -> Server request: provide the target player's NetworkObjectId.
+    /// Example usage on client: enemy.RequestForceChaseFromClientServerRpc(targetNetId);
+    /// The server will resolve the NetworkObject and set the transform as target.
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestForceChaseFromClientServerRpc(ulong targetNetworkObjectId)
+    {
+        if (!IsServer) return;
+
+        // Try to find the networked object
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(targetNetworkObjectId, out NetworkObject netObj))
+        {
+            if (netObj.TryGetComponent<Player>(out Player player))
+            {
+                ForceChasePlayer(player.transform);
+                return;
+            }
+        }
+
+        Debug.LogWarning($"RequestForceChaseFromClientServerRpc: target {targetNetworkObjectId} not found or not a Player.");
     }
 
     public void StopForcedChase()
     {
+        if (!IsServer)
+        {
+            // If client calls StopForcedChase, forward to server instead
+            RequestStopForcedChaseFromClientServerRpc();
+            return;
+        }
+
         _isForcedChase = false;
         _playerTarget = null;
         _agent.ResetPath();
@@ -263,12 +312,27 @@ public class EnemyBT : MonoBehaviour
         Debug.Log($"{name} a arrêté la chasse forcée et reprend son comportement normal.");
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestStopForcedChaseFromClientServerRpc()
+    {
+        if (!IsServer) return;
+        _isForcedChase = false;
+        _playerTarget = null;
+        _agent.ResetPath();
+        _isSearching = false;
+        _searchPoints.Clear();
+        _enemyState.ChangeAIState(AiState.Default);
+    }
+
     #endregion
 
     #region Utility / Triggers
 
     private void OnTriggerEnter(Collider other)
     {
+        // Keep authoritative player list on server only
+        if (!IsServer) return;
+
         if (other.TryGetComponent(out Player player))
         {
             if (!_players.Contains(player))
@@ -280,6 +344,8 @@ public class EnemyBT : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        if (!IsServer) return;
+
         if (other.TryGetComponent(out Player player))
         {
             if (_players.Contains(player))
@@ -291,13 +357,18 @@ public class EnemyBT : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
+        // Collision handling MUST be server-only to be authoritative
+        if (!IsServer) return;
+
         if (collision.collider.TryGetComponent(out Player player))
         {
-            print($"{player.name} is colliding with enemy : Player Death");
-           // player._playerStats._healthComponent.Die(_mapManager._safeChunk, player);
+            Debug.Log($"{player.name} collided with {name} : requesting player death (server).");
+
+            // Call the server-side Die logic on the player
+            // Ensure HealthComponent.Die only triggers server-side respawn logic.
+            PlayerDeathManager.Instance.HandlePlayerDeath(player, _mapManager._safeChunk);
         }
     }
-
 
     private Vector3 RandomNavmeshLocation()
     {

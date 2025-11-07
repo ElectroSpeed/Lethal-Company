@@ -146,17 +146,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8eb70ab33bba6b74788a683ee553b16a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _playerTarget: {fileID: 0}
   _detectionRange: 15
+  _wanderRadius: 500
+  _wanderInterval: 25
+  _agent: {fileID: 0}
+  _searchDurationMin: 10
+  _searchDurationMax: 30
+  _enemyPath: []
   _visionMask:
     serializedVersion: 2
     m_Bits: 384
-  _wanderRadius: 500
-  _wanderInterval: 25
-  _searchDurationMin: 10
-  _searchDurationMax: 30
-  _agent: {fileID: 0}
-  _enemyPath: []
 --- !u!135 &8492245064141906871
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -191,3 +192,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _agent: {fileID: 7446501199016809445}
+  state: 0

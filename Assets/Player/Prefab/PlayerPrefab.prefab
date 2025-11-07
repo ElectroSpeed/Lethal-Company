@@ -422,6 +422,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   _equipiedItem: {fileID: 0}
+  _deathCooldown: 5
 --- !u!114 &-288063807263012650
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -601,6 +602,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _mapManager: {fileID: 0}
+  _currentChunk: {fileID: 0}
   _regenRange: 1
 --- !u!1 &6169183980724380089
 GameObject:
