@@ -84,7 +84,7 @@ public class GameLoop : NetworkBehaviour
 
         if (_mapManager != null)
         {
-            _flowerOnMap.Value = _mapManager._itemCountOnMap; 
+            _flowerOnMap.Value = _mapManager._objectiveFlowerItemMaxCount; 
         }
     }
 

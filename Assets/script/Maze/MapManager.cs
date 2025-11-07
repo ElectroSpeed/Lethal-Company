@@ -19,8 +19,12 @@ public class MapManager : NetworkBehaviour
     public MazeChunkSafeZone _safeChunk;
 
     [Header("Spawn Item")]
-    [Min(1)] public int _itemCountOnMap;
-    [SerializeField, Min(1)] private Item _itemOnMap;
+    [Min(1)] public int _objectiveFlowerItemMaxCount;
+    [SerializeField] private Item _objectifItemFlower;
+
+    [Min(1)] public int _callMonsterItemMaxCount;
+    [SerializeField] private Item _callMonsterItem;
+
 
     [Header("Spawn Enemy")]
     [SerializeField] private GameObject _enemyPrefab;
@@ -45,8 +49,8 @@ public class MapManager : NetworkBehaviour
             );
         }
 
-        if (_itemCountOnMap >= ((_width * _height) / 2) - 1)
-            _itemCountOnMap = ((_width * _height) / 2) - 1;
+        if (_objectiveFlowerItemMaxCount >= ((_width * _height) / 2) - 1)
+            _objectiveFlowerItemMaxCount = ((_width * _height) / 2) - 1;
     }
 
     private void Awake()
@@ -159,12 +163,17 @@ public class MapManager : NetworkBehaviour
 
         _safeChunk.TryOpenNeighbordWall();
 
-        for (int i = 0; i < _itemCountOnMap; i++)
+        for (int i = 0; i < _objectiveFlowerItemMaxCount; i++)
         {
-            PlaceItem(_itemOnMap);
+            PlaceItem(_objectifItemFlower);
+        }
+        for (int i = 0; i < _callMonsterItemMaxCount; i++)
+        {
+            PlaceItem(_callMonsterItem);
         }
 
-        SpawnEnemyOnMap(_enemyPrefab, 1);
+
+        SpawnEnemyOnMap(_enemyPrefab, 2);
         _nav.BuildNavMesh();
         _mapInitialized = true;
 

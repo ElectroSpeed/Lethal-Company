@@ -29,7 +29,7 @@ public class PlayerDeathManager : NetworkBehaviour
     {
         yield return new WaitForSeconds(_deathCooldown);
 
-        Vector3 spawnPoint = respawnChunk._bounds.center; //besoin de bien check la position pour refaire spawn dans le safeChunk
+        Vector3 spawnPoint = respawnChunk.transform.position;
 
         player.transform.position = spawnPoint;
         player.gameObject.SetActive(true);
